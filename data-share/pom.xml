@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.mosip</groupId>
+    <artifactId>durian</artifactId>
+    <version>1.0.11-SNAPSHOT</version>
+  </parent>
+  <groupId>io.mosip.datashare</groupId>
+  <artifactId>data-share</artifactId>
+  <version>1.0.11-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  
+  <name>data-share</name>
+  <url>http://maven.apache.org</url>
+  <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <kernel.auth.adaptor.version>1.0.9</kernel.auth.adaptor.version>
+        <spring.boot.version>2.0.2.RELEASE</spring.boot.version>
+        <spring.data.jpa.version>2.0.7.RELEASE</spring.data.jpa.version>
+        <spring.security.test.version>5.0.5.RELEASE</spring.security.test.version>
+        <spring-cloud-config.version>2.0.0.RELEASE</spring-cloud-config.version>
+        <h2.version>1.4.197</h2.version>
+        <jackson.datatype.version>2.9.8</jackson.datatype.version>
+        <kernel.keygenerator.bouncycastle.version>1.0.6</kernel.keygenerator.bouncycastle.version>
+        <swagger.version>2.9.2</swagger.version>
+        <kernel.core.version>1.0.9</kernel.core.version>
+        <kernel.auth.adaptor.version>1.0.9</kernel.auth.adaptor.version>
+        <kernel.logger.logback.version>1.0.6</kernel.logger.logback.version>
+        <kernel.keygenerator.bouncycastle.version>1.0.6</kernel.keygenerator.bouncycastle.version>
+        <kernel.crypto-jce.version>1.0.6</kernel.crypto-jce.version>
+        <powermock.module.junit4.version>1.7.4</powermock.module.junit4.version>
+		<powermock.api.mockito.version>1.7.4</powermock.api.mockito.version>
+		<mockito.version>1.10.19</mockito.version>
+         
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+ 
+    <modules>
+    <module>data-share-service</module>
+  </modules>
+</project>
