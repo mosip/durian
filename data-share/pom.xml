@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
   <parent>
     <groupId>io.mosip</groupId>
     <artifactId>durian</artifactId>
@@ -9,10 +10,9 @@
   <groupId>io.mosip.datashare</groupId>
   <artifactId>data-share</artifactId>
   <version>1.0.11-SNAPSHOT</version>
-  <packaging>pom</packaging>
+
   
   <name>data-share</name>
-  <url>http://maven.apache.org</url>
   <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -36,15 +36,6 @@
 		<mockito.version>1.10.19</mockito.version>
          
   </properties>
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
- 
     <modules>
     <module>data-share-service</module>
   </modules>
