@@ -30,4 +30,9 @@ public interface DataShareService {
 	 */
 	public byte[] getDataFile(String policyId, String subscriberId, String randomShareKey);
 
+	public byte[] getDataFile(String randomShareKey);
+
+
+
+
 }

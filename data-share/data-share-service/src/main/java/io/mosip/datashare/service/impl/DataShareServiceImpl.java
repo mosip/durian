@@ -12,7 +12,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -29,6 +28,7 @@ import io.mosip.datashare.exception.FileException;
 import io.mosip.datashare.exception.URLCreationException;
 import io.mosip.datashare.logger.DataShareLogger;
 import io.mosip.datashare.service.DataShareService;
+import io.mosip.datashare.util.CacheUtil;
 import io.mosip.datashare.util.DigitalSignatureUtil;
 import io.mosip.datashare.util.EncryptionUtil;
 import io.mosip.datashare.util.PolicyUtil;
@@ -37,6 +37,7 @@ import io.mosip.kernel.core.logger.spi.Logger;
 
 
 
+// TODO: Auto-generated Javadoc
 /**
  * The Class DataShareServiceImpl.
  */
@@ -64,6 +65,10 @@ public class DataShareServiceImpl implements DataShareService {
 	@Autowired
 	ObjectStoreAdapter objectStoreAdapter;
 
+	/** The cache util. */
+	@Autowired
+	private CacheUtil cacheUtil;
+
 
 	/** The Constant KEY_LENGTH. */
 	private static final String KEY_LENGTH = "mosip.data.share.key.length";
@@ -86,9 +91,11 @@ public class DataShareServiceImpl implements DataShareService {
 	/** The Constant LOGGER. */
 	private static final Logger LOGGER = DataShareLogger.getLogger(DataShareServiceImpl.class);
 
+	/** The servlet path. */
 	@Value("${server.servlet.path}")
 	private String servletPath;
 
+	/** The is short url. */
 	@Value("${mosip.data.share.urlshortner}")
 	private boolean isShortUrl;
 
@@ -161,6 +168,8 @@ public class DataShareServiceImpl implements DataShareService {
 	 *
 	 * @param randomShareKey the random share key
 	 * @param shareDomain    the share domain
+	 * @param policyId       the policy id
+	 * @param subscriberId   the subscriber id
 	 * @return the string
 	 */
 	private String constructURL(String randomShareKey, String shareDomain, String policyId, String subscriberId) {
@@ -174,10 +183,10 @@ public class DataShareServiceImpl implements DataShareService {
 				}
 				// TODO key should be unique
 				String shortRandomShareKey = RandomStringUtils.randomAlphanumeric(length);
-				getShortUrlData(shortRandomShareKey, randomShareKey, policyId, subscriberId);
-				dataShareUrl = new URL(PROTOCOL, shareDomain, servletPath + shortRandomShareKey);
+				cacheUtil.getShortUrlData(shortRandomShareKey, policyId, subscriberId, randomShareKey);
+				dataShareUrl = new URL(PROTOCOL, shareDomain, servletPath + GET + FORWARD_SLASH + shortRandomShareKey);
 
-			} else {
+			} else {  
 				dataShareUrl = new URL(PROTOCOL, shareDomain, servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
 						+ policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey);
 			}
@@ -191,14 +200,7 @@ public class DataShareServiceImpl implements DataShareService {
 		return dataShareUrl.toString();
 	}
 
-	@Cacheable(value = "data", key = "#shortRandomShareKey")
-	private String getShortUrlData(String shortRandomShareKey, String randomShareKey, String policyId,
-			String subscriberId) {
 
-		return policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey;
-
-
-	}
 
 	/*
 	 * (non-Javadoc)
@@ -208,22 +210,25 @@ public class DataShareServiceImpl implements DataShareService {
 	 */
 	@Override
 	public byte[] getDataFile(String policyId, String subcriberId, String randomShareKey) {
+
 		byte[] dataBytes = null;
+
 		try {
 			boolean isDataShareAllow = getAndUpdateMetaData(randomShareKey, policyId, subcriberId);
-		if (isDataShareAllow) {
+			if (isDataShareAllow) {
 				InputStream inputStream = objectStoreAdapter.getObject(subcriberId, policyId, randomShareKey);
-			if (inputStream != null) {
-				dataBytes = IOUtils.toByteArray(inputStream);
+				if (inputStream != null) {
+					dataBytes = IOUtils.toByteArray(inputStream);
 				} else {
 					throw new DataShareNotFoundException();
-			}
-		} else {
+				}
+			} else {
 				throw new DataShareExpiredException();
-		}
+			}
 		} catch (IOException e) {
 			throw new FileException(IO_EXCEPTION, e);
 		}
+
 		return dataBytes;
 	}
 
@@ -231,10 +236,12 @@ public class DataShareServiceImpl implements DataShareService {
 	 * Gets the and update meta data.
 	 *
 	 * @param randomShareKey the random share key
+	 * @param policyId       the policy id
+	 * @param subcriberId    the subcriber id
 	 * @return the and update meta data
 	 */
 	private boolean getAndUpdateMetaData(String randomShareKey, String policyId, String subcriberId) {
-		boolean isDataShareAllow=false;
+		boolean isDataShareAllow = false;
 
 		Map<String, Object> metaDataMap = objectStoreAdapter.getMetaData(subcriberId, policyId, randomShareKey);
 		if (metaDataMap == null || metaDataMap.isEmpty()) {
@@ -249,7 +256,7 @@ public class DataShareServiceImpl implements DataShareService {
 			}
 
 		}
-		
+
 		return isDataShareAllow;
 	}
 
@@ -258,6 +265,7 @@ public class DataShareServiceImpl implements DataShareService {
 	 * Prepare meta data.
 	 *
 	 * @param subscriberId         the subscriber id
+	 * @param policyId             the policy id
 	 * @param policyDetailResponse the policy detail response
 	 * @return the map
 	 */
@@ -283,8 +291,10 @@ public class DataShareServiceImpl implements DataShareService {
 	/**
 	 * Storefile.
 	 *
-	 * @param metaDataMap the meta data map
-	 * @param filedata    the filedata
+	 * @param metaDataMap  the meta data map
+	 * @param filedata     the filedata
+	 * @param policyId     the policy id
+	 * @param subscriberId the subscriber id
 	 * @return the string
 	 */
 	private String storefile(Map<String, Object> metaDataMap, InputStream filedata, String policyId,
@@ -304,4 +314,31 @@ public class DataShareServiceImpl implements DataShareService {
 		return randomShareKey;
 
 	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * io.mosip.datashare.service.DataShareService#getDataFile(java.lang.String)
+	 */
+	@Override
+	public byte[] getDataFile(String shortUrlKey) {
+		String data = cacheUtil.getShortUrlData(shortUrlKey, null, null, null);
+		
+		if (data != null && !data.isEmpty()) {
+			String[] datas = data.split(",");
+			if (datas != null) {
+				return getDataFile(datas[0], datas[1], datas[2]);
+			} else {
+				throw new DataShareNotFoundException();
+			}
+
+		} else {
+			throw new DataShareNotFoundException();
+		}
+
+
+	}
+
+
 }

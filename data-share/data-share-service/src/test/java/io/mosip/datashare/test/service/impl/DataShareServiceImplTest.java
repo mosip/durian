@@ -35,6 +35,7 @@ import io.mosip.datashare.exception.DataShareExpiredException;
 import io.mosip.datashare.exception.DataShareNotFoundException;
 import io.mosip.datashare.exception.FileException;
 import io.mosip.datashare.service.impl.DataShareServiceImpl;
+import io.mosip.datashare.util.CacheUtil;
 import io.mosip.datashare.util.DigitalSignatureUtil;
 import io.mosip.datashare.util.EncryptionUtil;
 import io.mosip.datashare.util.PolicyUtil;
@@ -50,6 +51,9 @@ public class DataShareServiceImplTest {
 	/** The encryption util. */
 	@Mock
 	private EncryptionUtil encryptionUtil;
+
+	@Mock
+	private CacheUtil cacheUtil;
 
 	/** The env. */
 	@Mock
@@ -117,11 +121,21 @@ public class DataShareServiceImplTest {
 				)).thenReturn(metaDataMap);
 		Mockito.when(objectStoreAdapter.getObject(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
 				.thenReturn(inputStream);
+		Mockito.when(cacheUtil.getShortUrlData(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
+				Mockito.anyString()))
+				.thenReturn(POLICY_ID + "," + SUBSCRIBER_ID + "," + "dfg3456f");
 	}
 
 	@Test
 	public void createDataShareSuccessTest() {
 
+		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
+		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
+	}
+
+	@Test
+	public void createDataShareSuccesswithShortUrlTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "isShortUrl", true);
 		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
 		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
 	}
@@ -152,4 +166,9 @@ public class DataShareServiceImplTest {
 		dataShareServiceImpl.getDataFile(POLICY_ID, SUBSCRIBER_ID, "12dfsdff");
 	}
 
+	@Test
+	public void getDataFileWithShortKeySuccessTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "isShortUrl", true);
+		assertNotNull(dataShareServiceImpl.getDataFile("12dfsdff"));
+	}
 }

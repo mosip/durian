@@ -7,6 +7,7 @@ import io.mosip.datashare.dto.PolicyDetailResponse;
 @Component
 public class PolicyUtil {
 
+
 	public PolicyDetailResponse getPolicyDetail(String policyId, String subscriberId) {
 		// TODO call REST api of partner management
 		// Now its Mocked to give PolicyDetailResponse
@@ -17,8 +18,10 @@ public class PolicyUtil {
 		policyDetailResponse.setValidForInMinutes(60);
 		policyDetailResponse.setTransactionsAllowed(2);
 		policyDetailResponse.setShareDomain("mosip.ip");
+		policyDetailResponse.setSha256("");
 		return policyDetailResponse;
 	                	 
 	}
+
 
 }

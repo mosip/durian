@@ -116,4 +116,17 @@ public class DataShareControllerTest {
 
 	}
 
+	@Test
+	@WithUserDetails("test")
+	public void testGetDataShareWithShorKeySuccess() throws Exception {
+		String sample = "Test";
+
+		Mockito.when(dataShareService.getDataFile(Mockito.anyString()))
+				.thenReturn(sample.getBytes());
+
+		mockMvc.perform(MockMvcRequestBuilders.get("/get/randomsharekey")
+				.contentType(MediaType.ALL_VALUE).content(sample.getBytes())).andExpect(status().isOk());
+
+	}
+
 }

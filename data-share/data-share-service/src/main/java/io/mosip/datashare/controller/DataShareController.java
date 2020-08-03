@@ -98,4 +98,26 @@ public class DataShareController {
 		return ResponseEntity.status(HttpStatus.OK).body(fileBytes);
 
 	}
+
+	/**
+	 * Gets the file.
+	 *
+	 * @param randomShareKey the random share key
+	 * @return the file
+	 */
+
+	@GetMapping(path = "/get/{shortUrlKey}", consumes = MediaType.ALL_VALUE)
+	@ApiOperation(value = "Get the data share file", response = String.class)
+	@ApiResponses(value = { @ApiResponse(code = 200, message = "Get share data file successfully"),
+			@ApiResponse(code = 400, message = "Unable to fetch file"),
+			@ApiResponse(code = 500, message = "Internal Server Error") })
+	@ResponseBody
+	public ResponseEntity<byte[]> getFile(@PathVariable("shortUrlKey") String shortUrlKey) {
+		// TODO need to validate JWT token with aud or azp which is client name or
+		// subcriber id
+
+		byte[] fileBytes = dataShareService.getDataFile(shortUrlKey);
+		return ResponseEntity.status(HttpStatus.OK).body(fileBytes);
+
+	}
 }
