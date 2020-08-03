@@ -26,6 +26,7 @@ import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 import org.springframework.core.env.Environment;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import io.mosip.commons.khazana.spi.ObjectStoreAdapter;
 import io.mosip.datashare.dto.DataShare;
@@ -80,6 +81,8 @@ public class DataShareServiceImplTest {
 	InputStream inputStream;
 	@Before
 	public void setUp() throws Exception {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "servletPath", "/");
+		ReflectionTestUtils.setField(dataShareServiceImpl, "isShortUrl", false);
 		PowerMockito.mockStatic(RandomStringUtils.class);
 		Mockito.when(RandomStringUtils.randomAlphanumeric(Mockito.anyInt())).thenReturn("dfg3456f");
 		metaDataMap = new HashMap<String, Object>();
@@ -133,20 +136,20 @@ public class DataShareServiceImplTest {
 	@Test
 	public void getDataFileSuccessTest() {
 
-		assertNotNull(dataShareServiceImpl.getDataFile("12dfsdff"));
+		assertNotNull(dataShareServiceImpl.getDataFile(POLICY_ID, SUBSCRIBER_ID, "12dfsdff"));
 	}
 
 	@Test(expected = DataShareNotFoundException.class)
 	public void dataShareNotFoundExceptionTest() {
 		Mockito.when(objectStoreAdapter.getObject(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
 				.thenReturn(null);
-		dataShareServiceImpl.getDataFile("12dfsdff");
+		dataShareServiceImpl.getDataFile(POLICY_ID, SUBSCRIBER_ID, "12dfsdff");
 	}
 
 	@Test(expected = DataShareExpiredException.class)
 	public void dataShareExpiredExceptionTest() {
 		metaDataMap.put("transactionsAllowed", 0);
-		dataShareServiceImpl.getDataFile("12dfsdff");
+		dataShareServiceImpl.getDataFile(POLICY_ID, SUBSCRIBER_ID, "12dfsdff");
 	}
 
 }

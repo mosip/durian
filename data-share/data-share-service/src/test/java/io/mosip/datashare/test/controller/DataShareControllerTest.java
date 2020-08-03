@@ -105,12 +105,12 @@ public class DataShareControllerTest {
 	public void testGetDataShareSuccess() throws Exception {
 		String sample = "Test";
 
-		Mockito.when(dataShareService.getDataFile(Mockito.anyString())
+		Mockito.when(dataShareService.getDataFile(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())
 				).thenReturn(sample.getBytes());
 		
 		
 		
-		mockMvc.perform(MockMvcRequestBuilders.get("/get/randomsharekey")
+		mockMvc.perform(MockMvcRequestBuilders.get("/get/policyId/subscriberId/randomsharekey")
 				.contentType(MediaType.ALL_VALUE).content(sample.getBytes()))
 				.andExpect(status().isOk());
 

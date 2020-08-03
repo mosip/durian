@@ -28,6 +28,6 @@ public interface DataShareService {
 	 * @param randomShareKey the random share key
 	 * @return the data file
 	 */
-	public byte[] getDataFile(String randomShareKey);
+	public byte[] getDataFile(String policyId, String subscriberId, String randomShareKey);
 
 }

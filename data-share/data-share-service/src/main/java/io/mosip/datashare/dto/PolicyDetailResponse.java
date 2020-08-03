@@ -1,5 +1,7 @@
 package io.mosip.datashare.dto;
 
+import java.util.Date;
+
 import lombok.Data;
 
 @Data
@@ -19,5 +21,9 @@ public class PolicyDetailResponse {
 	private boolean isEncryptionNeeded;
 	
 	private String shareDomain;
+	
+	private String sha256;
+	
+	private Date policyPublishDate;
 
 }

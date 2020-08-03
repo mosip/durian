@@ -8,7 +8,7 @@ import io.mosip.datashare.dto.PolicyDetailResponse;
 public class PolicyUtil {
 
 	public PolicyDetailResponse getPolicyDetail(String policyId, String subscriberId) {
-		// To do call REST api of partner management
+		// TODO call REST api of partner management
 		// Now its Mocked to give PolicyDetailResponse
 
 		PolicyDetailResponse policyDetailResponse = new PolicyDetailResponse();

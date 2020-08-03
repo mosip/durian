@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
     <packaging>pom</packaging>
   <parent>
-    <groupId>io.mosip</groupId>
+    <groupId>io.mosip.datashare</groupId>
     <artifactId>durian</artifactId>
     <version>1.0.11-SNAPSHOT</version>
   </parent>
-  <groupId>io.mosip.datashare</groupId>
+  
   <artifactId>data-share</artifactId>
   <version>1.0.11-SNAPSHOT</version>
 

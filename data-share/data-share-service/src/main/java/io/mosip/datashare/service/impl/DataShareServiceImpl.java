@@ -12,6 +12,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -63,13 +64,6 @@ public class DataShareServiceImpl implements DataShareService {
 	@Autowired
 	ObjectStoreAdapter objectStoreAdapter;
 
-	/** The account. */
-	@Value("${mosip.datashare.account}")
-	private String account;
-
-	/** The container. */
-	@Value("${mosip.datashare.container}")
-	private String container;
 
 	/** The Constant KEY_LENGTH. */
 	private static final String KEY_LENGTH = "mosip.data.share.key.length";
@@ -87,10 +81,17 @@ public class DataShareServiceImpl implements DataShareService {
 	public static final String PROTOCOL = "http";
 
 	/** The Constant servletPath. */
-	public static final String servletPath = "/v1/datashare/get";
+	public static final String GET = "get";
 
 	/** The Constant LOGGER. */
 	private static final Logger LOGGER = DataShareLogger.getLogger(DataShareServiceImpl.class);
+
+	@Value("${server.servlet.path}")
+	private String servletPath;
+
+	@Value("${mosip.data.share.urlshortner}")
+	private boolean isShortUrl;
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -110,19 +111,23 @@ public class DataShareServiceImpl implements DataShareService {
 
 				PolicyDetailResponse policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
 
-				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyDetailResponse);
+				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, policyDetailResponse);
 
 				if (policyDetailResponse.isEncryptionNeeded()) {
-
+					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+							policyId, subscriberId + "encryptionNeeded" + policyDetailResponse.isEncryptionNeeded());
 					byte[] encryptedData = encryptionUtil.encryptData(fileData, subscriberId);
-					randomShareKey = storefile(aclMap, new ByteArrayInputStream(encryptedData));
+
+					randomShareKey = storefile(aclMap, new ByteArrayInputStream(encryptedData), policyId, subscriberId);
 
 				} else {
-
-					randomShareKey = storefile(aclMap, new ByteArrayInputStream(fileData));
+					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+							policyId, subscriberId + "encryptionNeeded" + policyDetailResponse.isEncryptionNeeded());
+					randomShareKey = storefile(aclMap, new ByteArrayInputStream(fileData), policyId, subscriberId);
 
 				}
-				String dataShareUrl = constructURL(randomShareKey, policyDetailResponse.getShareDomain());
+				String dataShareUrl = constructURL(randomShareKey, policyDetailResponse.getShareDomain(), policyId,
+						subscriberId);
 
 				dataShare.setSignature(digitalSignatureUtil.sign(fileData));
 				dataShare.setUrl(dataShareUrl);
@@ -158,11 +163,25 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @param shareDomain    the share domain
 	 * @return the string
 	 */
-	private String constructURL(String randomShareKey, String shareDomain) {
+	private String constructURL(String randomShareKey, String shareDomain, String policyId, String subscriberId) {
 		URL dataShareUrl = null;
 
 		try {
-			dataShareUrl = new URL(PROTOCOL, shareDomain, servletPath + FORWARD_SLASH + randomShareKey);
+			if (isShortUrl) {
+				int length = DEFAULT_KEY_LENGTH;
+				if (env.getProperty(KEY_LENGTH) != null) {
+					length = Integer.parseInt(env.getProperty(KEY_LENGTH));
+				}
+				// TODO key should be unique
+				String shortRandomShareKey = RandomStringUtils.randomAlphanumeric(length);
+				getShortUrlData(shortRandomShareKey, randomShareKey, policyId, subscriberId);
+				dataShareUrl = new URL(PROTOCOL, shareDomain, servletPath + shortRandomShareKey);
+
+			} else {
+				dataShareUrl = new URL(PROTOCOL, shareDomain, servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
+						+ policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey);
+			}
+
 		} catch (MalformedURLException e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 					LoggerFileConstant.POLICYID.toString(),
@@ -172,6 +191,15 @@ public class DataShareServiceImpl implements DataShareService {
 		return dataShareUrl.toString();
 	}
 
+	@Cacheable(value = "data", key = "#shortRandomShareKey")
+	private String getShortUrlData(String shortRandomShareKey, String randomShareKey, String policyId,
+			String subscriberId) {
+
+		return policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey;
+
+
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -179,12 +207,12 @@ public class DataShareServiceImpl implements DataShareService {
 	 * io.mosip.datashare.service.DataShareService#getDataFile(java.lang.String)
 	 */
 	@Override
-	public byte[] getDataFile(String randomShareKey) {
+	public byte[] getDataFile(String policyId, String subcriberId, String randomShareKey) {
 		byte[] dataBytes = null;
 		try {
-		boolean isDataShareAllow = getAndUpdateMetaData(randomShareKey);
+			boolean isDataShareAllow = getAndUpdateMetaData(randomShareKey, policyId, subcriberId);
 		if (isDataShareAllow) {
-			InputStream inputStream = objectStoreAdapter.getObject(account, container, randomShareKey);
+				InputStream inputStream = objectStoreAdapter.getObject(subcriberId, policyId, randomShareKey);
 			if (inputStream != null) {
 				dataBytes = IOUtils.toByteArray(inputStream);
 				} else {
@@ -205,16 +233,19 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @param randomShareKey the random share key
 	 * @return the and update meta data
 	 */
-	private boolean getAndUpdateMetaData(String randomShareKey) {
+	private boolean getAndUpdateMetaData(String randomShareKey, String policyId, String subcriberId) {
 		boolean isDataShareAllow=false;
-		Map<String, Object> metaDataMap = objectStoreAdapter.getMetaData(account, container, randomShareKey);
+
+		Map<String, Object> metaDataMap = objectStoreAdapter.getMetaData(subcriberId, policyId, randomShareKey);
 		if (metaDataMap == null || metaDataMap.isEmpty()) {
 			throw new DataShareNotFoundException();
 		}else {
+
 			int transactionAllowed=(int) metaDataMap.get("transactionsAllowed");
 			if(transactionAllowed >= 1) {
 				isDataShareAllow=true;
-				metaDataMap.put("transactionsAllowed", transactionAllowed - 1);
+				objectStoreAdapter.decMetadata(subcriberId, policyId, randomShareKey, "transactionsAllowed");
+
 			}
 
 		}
@@ -230,11 +261,15 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @param policyDetailResponse the policy detail response
 	 * @return the map
 	 */
-	private Map<String, Object> prepareMetaData(String subscriberId,
+	private Map<String, Object> prepareMetaData(String subscriberId, String policyId,
 			PolicyDetailResponse policyDetailResponse) {
-		// To do prepare ACL MAP as per policy details
+		// TODO prepare ACL MAP as per policy details
 		// Map created with mocked data
 		Map<String, Object> aclMap = new HashMap<>();
+
+		aclMap.put("policyId", policyId);
+		aclMap.put("sha256", policyDetailResponse.getSha256());
+		aclMap.put("policyPublishDate", policyDetailResponse.getPolicyPublishDate());
 		aclMap.put("subscriberId", subscriberId);
 		aclMap.put("validForInMinutes", policyDetailResponse.getValidForInMinutes());
 		aclMap.put("transactionsAllowed", policyDetailResponse.getTransactionsAllowed());
@@ -252,15 +287,17 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @param filedata    the filedata
 	 * @return the string
 	 */
-	private String storefile(Map<String, Object> metaDataMap, InputStream filedata) {
+	private String storefile(Map<String, Object> metaDataMap, InputStream filedata, String policyId,
+			String subscriberId) {
 		int length = DEFAULT_KEY_LENGTH;
 		if (env.getProperty(KEY_LENGTH) != null) {
 			length = Integer.parseInt(env.getProperty(KEY_LENGTH));
 		}
-
+		// TODO key should be unique
 		String randomShareKey = RandomStringUtils.randomAlphanumeric(length);
-		boolean isDataStored = objectStoreAdapter.putObject(account, container, randomShareKey, filedata);
-		objectStoreAdapter.addObjectMetaData(account, container, randomShareKey, metaDataMap);
+
+		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, randomShareKey, filedata);
+		objectStoreAdapter.addObjectMetaData(subscriberId, policyId, randomShareKey, metaDataMap);
 		LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), randomShareKey,
 				"Is data stored to object store" + isDataStored);
 
