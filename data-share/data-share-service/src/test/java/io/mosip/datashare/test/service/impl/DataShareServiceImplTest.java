@@ -14,7 +14,6 @@ import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -32,7 +31,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import io.mosip.commons.khazana.spi.ObjectStoreAdapter;
 import io.mosip.datashare.dto.DataShare;
-import io.mosip.datashare.dto.PolicyDetailResponse;
+import io.mosip.datashare.dto.DataSharePolicies;
+import io.mosip.datashare.dto.Policies;
+import io.mosip.datashare.dto.PolicyDetailResponseDto;
 import io.mosip.datashare.exception.DataShareExpiredException;
 import io.mosip.datashare.exception.DataShareNotFoundException;
 import io.mosip.datashare.exception.FileException;
@@ -43,7 +44,8 @@ import io.mosip.datashare.util.EncryptionUtil;
 import io.mosip.datashare.util.PolicyUtil;
 
 @RunWith(PowerMockRunner.class)
-@PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*" })
+@PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*", "org.w3c.dom.*",
+		"com.sun.org.apache.xalan.*" })
 @PowerMockRunnerDelegate(SpringRunner.class)
 @PrepareForTest(value = { RandomStringUtils.class, URL.class })
 public class DataShareServiceImplTest {
@@ -73,7 +75,7 @@ public class DataShareServiceImplTest {
 	@InjectMocks
 	DataShareServiceImpl dataShareServiceImpl;
 
-	private PolicyDetailResponse policyDetailResponse;
+	private PolicyDetailResponseDto policyDetailResponse;
 
 	private byte[] dataBytes;
 
@@ -93,7 +95,7 @@ public class DataShareServiceImplTest {
 		PowerMockito.mockStatic(RandomStringUtils.class);
 		Mockito.when(RandomStringUtils.randomAlphanumeric(Mockito.anyInt())).thenReturn("dfg3456f");
 		metaDataMap = new HashMap<String, Object>();
-		metaDataMap.put("transactionsAllowed", 2);
+		metaDataMap.put("transactionsallowed", "2");
 		ClassLoader classLoader = getClass().getClassLoader();
 		File file = new File(classLoader.getResource("test.txt").getFile());
 
@@ -102,8 +104,15 @@ public class DataShareServiceImplTest {
 		multiPartFile = new MockMultipartFile("file", "NameOfTheFile", "multipart/form-data",
 				new ByteArrayInputStream(dataBytes));
 
-		policyDetailResponse = new PolicyDetailResponse();
-		policyDetailResponse.setEncryptionNeeded(true);
+		policyDetailResponse = new PolicyDetailResponseDto();
+		DataSharePolicies dataSharePolicies = new DataSharePolicies();
+		dataSharePolicies.setEncryptionType("partnerBased");
+		dataSharePolicies.setShareDomain("dev.mosip.net");
+		dataSharePolicies.setTransactionsAllowed(2);
+		dataSharePolicies.setValidForInMinutes(60);
+		Policies policies = new Policies();
+		policies.setDataSharePolicies(dataSharePolicies);
+		policyDetailResponse.setPolicies(policies);
 		Mockito.when(policyUtil.getPolicyDetail(Mockito.anyString(), Mockito.anyString()))
 				.thenReturn(policyDetailResponse);
 		Mockito.when(encryptionUtil.encryptData(Mockito.any(), Mockito.anyString()))
@@ -124,8 +133,8 @@ public class DataShareServiceImplTest {
 				)).thenReturn(metaDataMap);
 		Mockito.when(objectStoreAdapter.getObject(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
 				.thenReturn(inputStream);
-		Mockito.when(cacheUtil.getShortUrlData(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
-				Mockito.anyString()))
+		Mockito.when(cacheUtil.getShortUrlData(Mockito.any(), Mockito.any(), Mockito.any(),
+				Mockito.any()))
 				.thenReturn(POLICY_ID + "," + SUBSCRIBER_ID + "," + "dfg3456f");
 	}
 
@@ -165,12 +174,11 @@ public class DataShareServiceImplTest {
 
 	@Test(expected = DataShareExpiredException.class)
 	public void dataShareExpiredExceptionTest() {
-		metaDataMap.put("transactionsAllowed", 0);
+		metaDataMap.put("transactionsallowed", "0");
 		dataShareServiceImpl.getDataFile(POLICY_ID, SUBSCRIBER_ID, "12dfsdff");
 	}
 
 	@Test
-	@Ignore
 	public void getDataFileWithShortKeySuccessTest() {
 		ReflectionTestUtils.setField(dataShareServiceImpl, "isShortUrl", true);
 		assertNotNull(dataShareServiceImpl.getDataFile("12dfsdff"));

@@ -164,7 +164,7 @@ public class EncryptionUtil {
     	
     }
 
-	public byte[] encryptPacket(byte[] data, byte[] encryptionKey) {
+	public byte[] encryptDataUsingKey(byte[] data, byte[] encryptionKey) {
 		// supports larger key lengths, Not required to specified in java 9
 		Security.setProperty("crypto.policy", "unlimited");
 		final SecretKey sessionKey = keyGenerator.getSymmetricKey();

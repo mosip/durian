@@ -24,8 +24,6 @@ public class DataShare {
 	/** The transactions allowed. */
 	private int transactionsAllowed;
 	
-	/** The extension allowed. */
-	private boolean extensionAllowed;
 	
 	/** The policy id. */
 	private String policyId;

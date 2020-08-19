@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.web.client.RestTemplate;
 
-import io.mosip.commons.khazana.impl.SwiftAdapter;
+import io.mosip.commons.khazana.impl.S3Adapter;
 import io.mosip.commons.khazana.spi.ObjectStoreAdapter;
 import io.mosip.kernel.auth.adapter.config.RestTemplateInterceptor;
 
@@ -25,6 +25,6 @@ public class DataShareBeanConfig {
 
 	@Bean
 	public ObjectStoreAdapter objectStoreAdapter() {
-		return new SwiftAdapter();
+		return new S3Adapter();
 	}
 }

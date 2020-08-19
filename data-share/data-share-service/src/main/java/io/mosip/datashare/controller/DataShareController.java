@@ -106,7 +106,7 @@ public class DataShareController {
 	 * @return the file
 	 */
 
-	@GetMapping(path = "/get/{shortUrlKey}", consumes = MediaType.ALL_VALUE)
+	@GetMapping(path = "/datashare/{shortUrlKey}", consumes = MediaType.ALL_VALUE)
 	@ApiOperation(value = "Get the data share file", response = String.class)
 	@ApiResponses(value = { @ApiResponse(code = 200, message = "Get share data file successfully"),
 			@ApiResponse(code = 400, message = "Unable to fetch file"),

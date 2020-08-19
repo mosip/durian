@@ -10,7 +10,6 @@ import java.io.InputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -46,7 +45,8 @@ import io.mosip.datashare.test.config.TestConfig;
 @ContextConfiguration(classes = TestConfig.class)
 @TestPropertySource(locations = "classpath:application.properties")
 @RunWith(PowerMockRunner.class)
-@PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*" })
+@PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*", "org.w3c.dom.*",
+		"com.sun.org.apache.xalan.*" })
 @SpringBootTest(classes = TestBootApplication.class)
 @AutoConfigureMockMvc
 public class DataShareControllerTest {
@@ -85,7 +85,6 @@ public class DataShareControllerTest {
 
 	@Test
 	@WithUserDetails("test")
-	@Ignore
 	public void testDataShareSuccess() throws Exception {
 		DataShare dataShare=new DataShare();
 		Mockito.when(
@@ -106,7 +105,6 @@ public class DataShareControllerTest {
 
 	@Test
 	@WithUserDetails("test")
-	@Ignore
 	public void testGetDataShareSuccess() throws Exception {
 		String sample = "Test";
 
@@ -129,7 +127,7 @@ public class DataShareControllerTest {
 		Mockito.when(dataShareService.getDataFile(Mockito.anyString()))
 				.thenReturn(sample.getBytes());
 
-		mockMvc.perform(MockMvcRequestBuilders.get("/get/randomsharekey")
+		mockMvc.perform(MockMvcRequestBuilders.get("/datashare/randomsharekey")
 				.contentType(MediaType.ALL_VALUE).content(sample.getBytes())).andExpect(status().isOk());
 
 	}

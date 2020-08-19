@@ -36,7 +36,8 @@ import io.mosip.datashare.util.DigitalSignatureUtil;
 import io.mosip.kernel.core.exception.ServiceError;
 
 @RunWith(PowerMockRunner.class)
-@PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*" })
+@PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*", "org.w3c.dom.*",
+		"com.sun.org.apache.xalan.*" })
 public class DigitalSignatureUtilTest {
 
 	/** The environment. */
@@ -77,8 +78,7 @@ public class DigitalSignatureUtilTest {
     		"  \"errors\": null\r\n" + 
 				"}";
 
-		Mockito.when(restTemplate.exchange(Mockito.anyString(), Mockito.any(HttpMethod.class),
-				Mockito.any(HttpEntity.class),
+		Mockito.when(restTemplate.exchange(Mockito.any(), Mockito.any(HttpMethod.class), Mockito.any(HttpEntity.class),
 				Mockito.any(Class.class))).thenReturn(new ResponseEntity<String>(signResponse, HttpStatus.OK));
 		Mockito.when(objectMapper.readValue(signResponse, SignResponseDto.class)).thenReturn(signResponseDto);
 		Mockito.when(environment.getProperty("mosip.data.share.datetime.pattern"))
@@ -86,7 +86,6 @@ public class DigitalSignatureUtilTest {
 	}
 
 	@Test
-	@Ignore
 	public void signSuccessTest() throws IOException {
 		String test = "testdata";
 		byte[] sample = test.getBytes();
