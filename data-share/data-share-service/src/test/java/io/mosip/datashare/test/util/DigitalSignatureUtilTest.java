@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -20,6 +19,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -59,9 +59,11 @@ public class DigitalSignatureUtilTest {
 
 	String signResponse;
 
+
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setUp() throws JsonParseException, JsonMappingException, IOException {
+		ReflectionTestUtils.setField(digitalSignatureUtil, "keymanagerSignUrl", "testurl");
 		signResponseDto = new SignResponseDto();
 		SignatureResponse sign = new SignatureResponse();
 		sign.setSignature("testdata");
@@ -77,9 +79,13 @@ public class DigitalSignatureUtilTest {
     		"  },\r\n" + 
     		"  \"errors\": null\r\n" + 
 				"}";
+		ResponseEntity<String> response = new ResponseEntity<String>(signResponse, HttpStatus.OK);
+		Mockito.when(restTemplate.exchange(Mockito.any(String.class), Mockito.any(HttpMethod.class),
+				Mockito.any(HttpEntity.class),
+				Mockito.any(Class.class)))
+				.thenReturn(response);
 
-		Mockito.when(restTemplate.exchange(Mockito.any(), Mockito.any(HttpMethod.class), Mockito.any(HttpEntity.class),
-				Mockito.any(Class.class))).thenReturn(new ResponseEntity<String>(signResponse, HttpStatus.OK));
+
 		Mockito.when(objectMapper.readValue(signResponse, SignResponseDto.class)).thenReturn(signResponseDto);
 		Mockito.when(environment.getProperty("mosip.data.share.datetime.pattern"))
 				.thenReturn("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -108,26 +114,25 @@ public class DigitalSignatureUtilTest {
 
 	@SuppressWarnings("unchecked")
 	@Test(expected = ApiNotAccessibleException.class)
-	@Ignore
 	public void testHttpClientException() throws JsonParseException, JsonMappingException, IOException {
 		HttpClientErrorException httpClientErrorException = new HttpClientErrorException(HttpStatus.BAD_REQUEST,
 				"error");
 		String test = "testdata";
 		byte[] sample = test.getBytes();
-		Mockito.when(restTemplate.exchange(Mockito.anyString(), Mockito.any(HttpMethod.class),
-				Mockito.any(HttpEntity.class), Mockito.any(Class.class))).thenThrow(httpClientErrorException);
+		Mockito.when(restTemplate.exchange(Mockito.any(String.class), Mockito.any(HttpMethod.class),
+				Mockito.any(HttpEntity.class),
+				Mockito.any(Class.class))).thenThrow(httpClientErrorException);
 		digitalSignatureUtil.sign(sample);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Test(expected = ApiNotAccessibleException.class)
-	@Ignore
 	public void testHttpServerException() throws JsonParseException, JsonMappingException, IOException {
 		HttpServerErrorException httpServerErrorException = new HttpServerErrorException(HttpStatus.BAD_REQUEST,
 				"error");
 		String test = "testdata";
 		byte[] sample = test.getBytes();
-		Mockito.when(restTemplate.exchange(Mockito.anyString(), Mockito.any(HttpMethod.class),
+		Mockito.when(restTemplate.exchange(Mockito.any(String.class), Mockito.any(HttpMethod.class),
 				Mockito.any(HttpEntity.class),
 				Mockito.any(Class.class))).thenThrow(httpServerErrorException);
 		digitalSignatureUtil.sign(sample);

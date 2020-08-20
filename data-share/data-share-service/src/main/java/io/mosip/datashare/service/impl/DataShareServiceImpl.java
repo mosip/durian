@@ -84,7 +84,7 @@ public class DataShareServiceImpl implements DataShareService {
 	public static final String FORWARD_SLASH = "/";
 
 	/** The Constant PROTOCOL. */
-	public static final String PROTOCOL = "http";
+	public static final String PROTOCOL = "https";
 
 	/** The Constant servletPath. */
 	public static final String GET = "get";

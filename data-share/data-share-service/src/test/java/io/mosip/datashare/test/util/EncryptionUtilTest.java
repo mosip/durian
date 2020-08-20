@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -24,6 +23,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
@@ -69,6 +69,7 @@ public class EncryptionUtilTest {
 
 	@Before
 	public void setUp() throws JsonParseException, JsonMappingException, IOException {
+		ReflectionTestUtils.setField(encryptionUtil, "cryptomanagerEncryptUrl", "testurl");
 		cryptomanagerResponseDto = new CryptomanagerResponseDto();
 		EncryptResponseDto responseData = new EncryptResponseDto();
 		responseData.setData("testdata");
@@ -87,7 +88,6 @@ public class EncryptionUtilTest {
 	}
 
 	@Test
-	@Ignore
 	public void encryptionSuccessTest() throws IOException {
 
 		String test = "testdata";
@@ -111,7 +111,6 @@ public class EncryptionUtilTest {
 	}
 
 	@Test(expected = ApiNotAccessibleException.class)
-	@Ignore
 	public void testHttpClientException() throws JsonParseException, JsonMappingException, IOException {
 		HttpClientErrorException httpClientErrorException = new HttpClientErrorException(HttpStatus.BAD_REQUEST,
 				"error");
@@ -126,7 +125,6 @@ public class EncryptionUtilTest {
 	}
 
 	@Test(expected = ApiNotAccessibleException.class)
-	@Ignore
 	public void testHttpServerException() throws JsonParseException, JsonMappingException, IOException {
 		HttpServerErrorException httpServerErrorException = new HttpServerErrorException(HttpStatus.BAD_REQUEST,
 				"error");
