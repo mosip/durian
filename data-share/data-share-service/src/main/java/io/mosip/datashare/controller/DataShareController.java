@@ -5,6 +5,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,7 +53,7 @@ public class DataShareController {
 	 * @return the response entity
 	 */
 
-	// @PreAuthorize("hasAnyRole('CREATE_SHARE')")
+	@PreAuthorize("hasAnyRole('CREATE_SHARE')")
 	@PostMapping(path = "/create/{policyId}/{subscriberId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@ApiOperation(value = "Get the share data url", response = DataShareResponseDto.class)
 	@ApiResponses(value = { @ApiResponse(code = 200, message = "Get Share Data URL successfully"),

@@ -13,7 +13,7 @@ public class DataShareLogger {
 		mosipRollingFileAppender.setAppend(true);
 		mosipRollingFileAppender.setAppenderName("fileappender");
 		mosipRollingFileAppender.setFileName("logs/datashare.log");
-		mosipRollingFileAppender.setFileNamePattern("logs/packetutility-%d{yyyy-MM-dd}-%i.log");
+		mosipRollingFileAppender.setFileNamePattern("logs/datashare-%d{yyyy-MM-dd}-%i.log");
 		mosipRollingFileAppender.setImmediateFlush(true);
 		mosipRollingFileAppender.setMaxFileSize("1mb");
 		mosipRollingFileAppender.setMaxHistory(3);
