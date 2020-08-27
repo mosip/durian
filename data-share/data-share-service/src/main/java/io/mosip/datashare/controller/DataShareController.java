@@ -9,7 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,7 +58,7 @@ public class DataShareController {
 	@ApiOperation(value = "Get the share data url", response = DataShareResponseDto.class)
 	@ApiResponses(value = { @ApiResponse(code = 200, message = "Get Share Data URL successfully"),
 			@ApiResponse(code = 400, message = "Unable to get share data url") })
-	public ResponseEntity<Object> createDataShare(@RequestParam("file") MultipartFile file,
+	public ResponseEntity<Object> createDataShare(@RequestBody MultipartFile file,
 			@PathVariable("policyId") String policyId, @PathVariable("subscriberId") String subscriberId) {
 		
 
