@@ -42,12 +42,13 @@ import io.mosip.datashare.util.CacheUtil;
 import io.mosip.datashare.util.DigitalSignatureUtil;
 import io.mosip.datashare.util.EncryptionUtil;
 import io.mosip.datashare.util.PolicyUtil;
+import io.mosip.kernel.core.util.CryptoUtil;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*", "org.w3c.dom.*",
 		"com.sun.org.apache.xalan.*" })
 @PowerMockRunnerDelegate(SpringRunner.class)
-@PrepareForTest(value = { RandomStringUtils.class, URL.class })
+@PrepareForTest(value = { RandomStringUtils.class, URL.class, CryptoUtil.class })
 public class DataShareServiceImplTest {
 
 	@Mock

@@ -35,6 +35,7 @@ import io.mosip.datashare.util.EncryptionUtil;
 import io.mosip.datashare.util.PolicyUtil;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
+import io.mosip.kernel.core.util.CryptoUtil;
 
 
 
@@ -226,7 +227,7 @@ public class DataShareServiceImpl implements DataShareService {
 			if (isDataShareAllow) {
 				InputStream inputStream = objectStoreAdapter.getObject(subcriberId, policyId, randomShareKey);
 				if (inputStream != null) {
-					dataBytes = IOUtils.toByteArray(inputStream);
+					dataBytes = CryptoUtil.encodeBase64(IOUtils.toByteArray(inputStream)).getBytes();
 				} else {
 					throw new DataShareNotFoundException();
 				}
