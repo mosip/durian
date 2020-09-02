@@ -118,7 +118,7 @@ jobs:
     env:
       NAMESPACE: ${{ secrets.dev_namespace_docker_hub }}
       SERVICE_NAME: data-share-service
-      SERVICE_LOCATION: /durian/data-share/data-share-service
+      SERVICE_LOCATION: data-share/data-share-service
 
     steps:
       - uses: actions/checkout@v2
