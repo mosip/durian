@@ -1,6 +1,7 @@
 package io.mosip.datashare.util;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,16 +62,18 @@ public class PolicyUtil {
 		Map<String, String> parameters = new HashMap<>();
 		parameters.put("partnerId", subscriberId);
 		parameters.put("policyId", policyId);
-		UriComponentsBuilder builder = UriComponentsBuilder.fromPath(uri);
-		builder.build(parameters);
+			UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(uri);
+
+			URI urlWithPath = builder.build(parameters);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		HttpEntity httpEntity = new HttpEntity<>(headers);
-		ResponseEntity<String> response = restTemplate.exchange(builder.toUriString(), HttpMethod.GET, httpEntity,
+			ResponseEntity<String> response = restTemplate.exchange(urlWithPath.toString(), HttpMethod.GET, httpEntity,
 				String.class);
-			PolicyManagerResponseDto responseObject;
 
-			responseObject = mapper.readValue(response.getBody(), PolicyManagerResponseDto.class);
+
+			PolicyManagerResponseDto responseObject = mapper.readValue(response.getBody(),
+					PolicyManagerResponseDto.class);
 			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
 				ServiceError error = responseObject.getErrors().get(0);
 				throw new PolicyException(error.getMessage());

@@ -280,8 +280,7 @@ public class DataShareServiceImpl implements DataShareService {
 	 */
 	private Map<String, Object> prepareMetaData(String subscriberId, String policyId,
 			PolicyResponseDto policyResponseDto) {
-		// TODO prepare ACL MAP as per policy details
-		// Map created with mocked data
+
 		DataShareDto dataSharePolicies = policyResponseDto.getPolicies().getDataSharePolicies();
 		Map<String, Object> aclMap = new HashMap<>();
 
