@@ -21,8 +21,8 @@ import io.mosip.commons.khazana.spi.ObjectStoreAdapter;
 import io.mosip.datashare.constant.DataUtilityErrorCodes;
 import io.mosip.datashare.constant.LoggerFileConstant;
 import io.mosip.datashare.dto.DataShare;
-import io.mosip.datashare.dto.DataSharePolicies;
-import io.mosip.datashare.dto.PolicyDetailResponseDto;
+import io.mosip.datashare.dto.DataShareDto;
+import io.mosip.datashare.dto.PolicyResponseDto;
 import io.mosip.datashare.exception.DataShareExpiredException;
 import io.mosip.datashare.exception.DataShareNotFoundException;
 import io.mosip.datashare.exception.FileException;
@@ -124,10 +124,10 @@ public class DataShareServiceImpl implements DataShareService {
 			String randomShareKey;
 			try {
 				byte[] fileData = file.getBytes();
-				PolicyDetailResponseDto policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
+				PolicyResponseDto policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
 
 				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, policyDetailResponse);
-				DataSharePolicies dataSharePolicies = policyDetailResponse.getPolicies().getDataSharePolicies();
+				DataShareDto dataSharePolicies = policyDetailResponse.getPolicies().getDataSharePolicies();
 				byte[] encryptedData = null;
 				if (PARTNERBASED.equalsIgnoreCase(dataSharePolicies.getEncryptionType())) {
 					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
@@ -149,8 +149,8 @@ public class DataShareServiceImpl implements DataShareService {
 				dataShare.setUrl(dataShareUrl);
 				dataShare.setPolicyId(policyId);
 				dataShare.setSubscriberId(subscriberId);
-				dataShare.setValidForInMinutes(dataSharePolicies.getValidForInMinutes());
-				dataShare.setTransactionsAllowed(dataSharePolicies.getTransactionsAllowed());
+				dataShare.setValidForInMinutes(Integer.parseInt(dataSharePolicies.getValidForInMinutes()));
+				dataShare.setTransactionsAllowed(Integer.parseInt(dataSharePolicies.getTransactionsAllowed()));
 				LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 						"Datashare" + dataShare.toString());
 				LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
@@ -279,14 +279,13 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @return the map
 	 */
 	private Map<String, Object> prepareMetaData(String subscriberId, String policyId,
-			PolicyDetailResponseDto policyDetailResponse) {
-		// TODO prepare ACL MAP as per policy details
-		// Map created with mocked data
-		DataSharePolicies dataSharePolicies = policyDetailResponse.getPolicies().getDataSharePolicies();
+			PolicyResponseDto policyResponseDto) {
+
+		DataShareDto dataSharePolicies = policyResponseDto.getPolicies().getDataSharePolicies();
 		Map<String, Object> aclMap = new HashMap<>();
 
 		aclMap.put("policyid", policyId);
-		aclMap.put("policypublishdate", policyDetailResponse.getPublishDate());
+		aclMap.put("policypublishdate", policyResponseDto.getPublishDate());
 		aclMap.put("subscriberId", subscriberId);
 		aclMap.put("validforinminutes", dataSharePolicies.getValidForInMinutes());
 		aclMap.put("transactionsallowed", dataSharePolicies.getTransactionsAllowed());

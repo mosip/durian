@@ -31,9 +31,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import io.mosip.commons.khazana.spi.ObjectStoreAdapter;
 import io.mosip.datashare.dto.DataShare;
-import io.mosip.datashare.dto.DataSharePolicies;
-import io.mosip.datashare.dto.Policies;
-import io.mosip.datashare.dto.PolicyDetailResponseDto;
+import io.mosip.datashare.dto.DataShareDto;
+import io.mosip.datashare.dto.PolicyAttributesDto;
+import io.mosip.datashare.dto.PolicyResponseDto;
 import io.mosip.datashare.exception.DataShareExpiredException;
 import io.mosip.datashare.exception.DataShareNotFoundException;
 import io.mosip.datashare.exception.FileException;
@@ -76,7 +76,7 @@ public class DataShareServiceImplTest {
 	@InjectMocks
 	DataShareServiceImpl dataShareServiceImpl;
 
-	private PolicyDetailResponseDto policyDetailResponse;
+	private PolicyResponseDto policyResponseDto;
 
 	private byte[] dataBytes;
 
@@ -89,6 +89,8 @@ public class DataShareServiceImplTest {
 	MockMultipartFile multiPartFile;
 
 	InputStream inputStream;
+
+	private PolicyAttributesDto policyAttributesDto;
 	@Before
 	public void setUp() throws Exception {
 		ReflectionTestUtils.setField(dataShareServiceImpl, "servletPath", "/");
@@ -105,17 +107,17 @@ public class DataShareServiceImplTest {
 		multiPartFile = new MockMultipartFile("file", "NameOfTheFile", "multipart/form-data",
 				new ByteArrayInputStream(dataBytes));
 
-		policyDetailResponse = new PolicyDetailResponseDto();
-		DataSharePolicies dataSharePolicies = new DataSharePolicies();
+		policyResponseDto = new PolicyResponseDto();
+		DataShareDto dataSharePolicies = new DataShareDto();
 		dataSharePolicies.setEncryptionType("partnerBased");
 		dataSharePolicies.setShareDomain("dev.mosip.net");
-		dataSharePolicies.setTransactionsAllowed(2);
-		dataSharePolicies.setValidForInMinutes(60);
-		Policies policies = new Policies();
-		policies.setDataSharePolicies(dataSharePolicies);
-		policyDetailResponse.setPolicies(policies);
+		dataSharePolicies.setTransactionsAllowed("2");
+		dataSharePolicies.setValidForInMinutes("60");
+		policyAttributesDto = new PolicyAttributesDto();
+		policyAttributesDto.setDataSharePolicies(dataSharePolicies);
+		policyResponseDto.setPolicies(policyAttributesDto);
 		Mockito.when(policyUtil.getPolicyDetail(Mockito.anyString(), Mockito.anyString()))
-				.thenReturn(policyDetailResponse);
+				.thenReturn(policyResponseDto);
 		Mockito.when(encryptionUtil.encryptData(Mockito.any(), Mockito.anyString()))
 				.thenReturn(dataBytes);
 		
