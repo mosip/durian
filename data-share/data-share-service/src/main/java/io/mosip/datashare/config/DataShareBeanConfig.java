@@ -10,7 +10,8 @@ import org.springframework.web.client.RestTemplate;
 
 import io.mosip.commons.khazana.impl.S3Adapter;
 import io.mosip.commons.khazana.spi.ObjectStoreAdapter;
-import io.mosip.kernel.auth.adapter.config.RestTemplateInterceptor;
+import io.mosip.kernel.auth.defaultadapter.config.RestTemplateInterceptor;
+
 
 @Configuration
 @EnableCaching
