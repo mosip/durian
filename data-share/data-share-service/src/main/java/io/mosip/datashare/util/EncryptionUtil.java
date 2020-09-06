@@ -1,7 +1,6 @@
 package io.mosip.datashare.util;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -15,20 +14,17 @@ import java.time.format.DateTimeParseException;
 
 import javax.crypto.SecretKey;
 
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.mosip.datashare.constant.ApiName;
 import io.mosip.datashare.constant.DataUtilityErrorCodes;
 import io.mosip.datashare.constant.LoggerFileConstant;
 import io.mosip.datashare.dto.CryptomanagerRequestDto;
@@ -63,10 +59,6 @@ public class EncryptionUtil {
 	@Autowired
 	private Environment env;
 
-	/** The rest template. */
-	@Autowired
-	private RestTemplate restTemplate;
-
 	/** The mapper. */
 	@Autowired
 	private ObjectMapper mapper;
@@ -80,9 +72,8 @@ public class EncryptionUtil {
 	@Autowired
 	private CryptoCoreSpec<byte[], byte[], SecretKey, PublicKey, PrivateKey, String> cryptoCore;
 
-	/** The cryptomanager encrypt url. */
-	@Value("${CRYPTOMANAGER_ENCRYPT}")
-	private String cryptomanagerEncryptUrl;
+	@Autowired
+	private RestUtil restUtil;
 
 	/** The Constant IO_EXCEPTION. */
 	private static final String IO_EXCEPTION = "Exception while reading packet inputStream";
@@ -106,7 +97,7 @@ public class EncryptionUtil {
 		String dataToBeEncrypted;
 		byte[] encryptedPacket = null;
 		try {
-			dataToBeEncrypted = IOUtils.toString(filedata, StandardCharsets.UTF_8.toString());
+			dataToBeEncrypted = CryptoUtil.encodeBase64(filedata);
 			CryptomanagerRequestDto cryptomanagerRequestDto = new CryptomanagerRequestDto();
 			RequestWrapper<CryptomanagerRequestDto> request = new RequestWrapper<>();
 			cryptomanagerRequestDto.setApplicationId(applicationId);
@@ -119,18 +110,17 @@ public class EncryptionUtil {
 
 			request.setRequest(cryptomanagerRequestDto);
 			cryptomanagerRequestDto.setTimeStamp(localdatetime);
-			HttpEntity<RequestWrapper<CryptomanagerRequestDto>> httpEntity = new HttpEntity<>(request);
-			ResponseEntity<String> response = restTemplate.exchange(cryptomanagerEncryptUrl, HttpMethod.POST,
-					httpEntity, String.class);
+			String response = restUtil.postApi(ApiName.CRYPTOMANAGER_ENCRYPT, null, "", "",
+					MediaType.APPLICATION_JSON, request, String.class);
 
-			CryptomanagerResponseDto responseObject = mapper.readValue(response.getBody(),
+			CryptomanagerResponseDto responseObject = mapper.readValue(response,
 					CryptomanagerResponseDto.class);
 
 			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
 				ServiceError error = responseObject.getErrors().get(0);
 				throw new DataEncryptionFailureException(error.getMessage());
 			}
-			encryptedPacket = CryptoUtil.decodeBase64(responseObject.getResponse().getData());
+			encryptedPacket = responseObject.getResponse().getData().getBytes();
 			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(), refId,
 					"Encryption done successfully");
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
@@ -149,11 +139,11 @@ public class EncryptionUtil {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
 					LoggerFileConstant.SUBSCRIBERID.toString(),
 					"EncryptionUtil::encryptData():: error with error message" + ExceptionUtils.getStackTrace(e));
-			if (e instanceof HttpClientErrorException) {
-				HttpClientErrorException httpClientException = (HttpClientErrorException) e;
+			if (e.getCause() instanceof HttpClientErrorException) {
+				HttpClientErrorException httpClientException = (HttpClientErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpClientException.getResponseBodyAsString());
-			} else if (e instanceof HttpServerErrorException) {
-				HttpServerErrorException httpServerException = (HttpServerErrorException) e;
+			} else if (e.getCause() instanceof HttpServerErrorException) {
+				HttpServerErrorException httpServerException = (HttpServerErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpServerException.getResponseBodyAsString());
 			} else {
 				throw new DataEncryptionFailureException(e);

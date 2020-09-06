@@ -6,18 +6,15 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.mosip.datashare.constant.ApiName;
 import io.mosip.datashare.constant.LoggerFileConstant;
 import io.mosip.datashare.dto.SignRequestDto;
 import io.mosip.datashare.dto.SignResponseDto;
@@ -41,9 +38,6 @@ public class DigitalSignatureUtil {
 	@Autowired
 	private Environment environment;
 
-	/** The rest template. */
-	@Autowired
-	private RestTemplate restTemplate;
 
 	/** The mapper. */
 	@Autowired
@@ -52,12 +46,12 @@ public class DigitalSignatureUtil {
 	/** The Constant DATETIME_PATTERN. */
 	private static final String DATETIME_PATTERN = "mosip.data.share.datetime.pattern";
 
-	/** The keymanager sign url. */
-	@Value("${KEYMANAGER_SIGN}")
-	private String keymanagerSignUrl;
+
 
 	private static final Logger LOGGER = DataShareLogger.getLogger(DigitalSignatureUtil.class);
 
+	@Autowired
+	private RestUtil restUtil;
 
 	/**
 	 * Sign.
@@ -80,11 +74,10 @@ public class DigitalSignatureUtil {
 			LocalDateTime localdatetime = LocalDateTime
 					.parse(DateUtils.getUTCCurrentDateTimeString(environment.getProperty(DATETIME_PATTERN)), format);
 			request.setRequesttime(localdatetime);
-			HttpEntity<RequestWrapper<SignRequestDto>> httpEntity = new HttpEntity<>(request);
-			ResponseEntity<String> response = restTemplate.exchange(keymanagerSignUrl, HttpMethod.POST, httpEntity,
-					String.class);
+			String responseString = restUtil.postApi(ApiName.KEYMANAGER_SIGN, null, "", "", MediaType.APPLICATION_JSON,
+					request, String.class);
 
-			SignResponseDto responseObject = mapper.readValue(response.getBody(), SignResponseDto.class);
+			SignResponseDto responseObject = mapper.readValue(responseString, SignResponseDto.class);
 			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
 				ServiceError error = responseObject.getErrors().get(0);
 				throw new SignatureException(error.getMessage());
@@ -102,11 +95,11 @@ public class DigitalSignatureUtil {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 					LoggerFileConstant.POLICYID.toString(),
 					"DigitalSignatureUtil::sign():: error with error message" + ExceptionUtils.getStackTrace(e));
-			if (e instanceof HttpClientErrorException) {
-				HttpClientErrorException httpClientException = (HttpClientErrorException) e;
+			if (e.getCause() instanceof HttpClientErrorException) {
+				HttpClientErrorException httpClientException = (HttpClientErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpClientException.getResponseBodyAsString());
-			} else if (e instanceof HttpServerErrorException) {
-				HttpServerErrorException httpServerException = (HttpServerErrorException) e;
+			} else if (e.getCause() instanceof HttpServerErrorException) {
+				HttpServerErrorException httpServerException = (HttpServerErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpServerException.getResponseBodyAsString());
 			} else {
 				throw new SignatureException(e);

@@ -15,14 +15,6 @@ import org.mockito.Mockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -30,9 +22,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.mosip.datashare.dto.SignResponseDto;
 import io.mosip.datashare.dto.SignatureResponse;
-import io.mosip.datashare.exception.ApiNotAccessibleException;
 import io.mosip.datashare.exception.SignatureException;
 import io.mosip.datashare.util.DigitalSignatureUtil;
+import io.mosip.datashare.util.RestUtil;
 import io.mosip.kernel.core.exception.ServiceError;
 
 @RunWith(PowerMockRunner.class)
@@ -46,7 +38,7 @@ public class DigitalSignatureUtilTest {
 
 	/** The rest template. */
 	@Mock
-	private RestTemplate restTemplate;
+	private RestUtil restUtil;
 
 	/** The mapper. */
 	@Mock
@@ -63,7 +55,7 @@ public class DigitalSignatureUtilTest {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setUp() throws JsonParseException, JsonMappingException, IOException {
-		ReflectionTestUtils.setField(digitalSignatureUtil, "keymanagerSignUrl", "testurl");
+
 		signResponseDto = new SignResponseDto();
 		SignatureResponse sign = new SignatureResponse();
 		sign.setSignature("testdata");
@@ -79,12 +71,9 @@ public class DigitalSignatureUtilTest {
     		"  },\r\n" + 
     		"  \"errors\": null\r\n" + 
 				"}";
-		ResponseEntity<String> response = new ResponseEntity<String>(signResponse, HttpStatus.OK);
-		Mockito.when(restTemplate.exchange(Mockito.any(String.class), Mockito.any(HttpMethod.class),
-				Mockito.any(HttpEntity.class),
-				Mockito.any(Class.class)))
-				.thenReturn(response);
 
+		Mockito.when(restUtil.postApi(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+				Mockito.any(), Mockito.any())).thenReturn(signResponse);
 
 		Mockito.when(objectMapper.readValue(signResponse, SignResponseDto.class)).thenReturn(signResponseDto);
 		Mockito.when(environment.getProperty("mosip.data.share.datetime.pattern"))
@@ -112,31 +101,6 @@ public class DigitalSignatureUtilTest {
 
 
 
-	@SuppressWarnings("unchecked")
-	@Test(expected = ApiNotAccessibleException.class)
-	public void testHttpClientException() throws JsonParseException, JsonMappingException, IOException {
-		HttpClientErrorException httpClientErrorException = new HttpClientErrorException(HttpStatus.BAD_REQUEST,
-				"error");
-		String test = "testdata";
-		byte[] sample = test.getBytes();
-		Mockito.when(restTemplate.exchange(Mockito.any(String.class), Mockito.any(HttpMethod.class),
-				Mockito.any(HttpEntity.class),
-				Mockito.any(Class.class))).thenThrow(httpClientErrorException);
-		digitalSignatureUtil.sign(sample);
-	}
-
-	@SuppressWarnings("unchecked")
-	@Test(expected = ApiNotAccessibleException.class)
-	public void testHttpServerException() throws JsonParseException, JsonMappingException, IOException {
-		HttpServerErrorException httpServerErrorException = new HttpServerErrorException(HttpStatus.BAD_REQUEST,
-				"error");
-		String test = "testdata";
-		byte[] sample = test.getBytes();
-		Mockito.when(restTemplate.exchange(Mockito.any(String.class), Mockito.any(HttpMethod.class),
-				Mockito.any(HttpEntity.class),
-				Mockito.any(Class.class))).thenThrow(httpServerErrorException);
-		digitalSignatureUtil.sign(sample);
-	}
 
 	@Test(expected = SignatureException.class)
 	public void signFailureTest() throws JsonParseException, JsonMappingException, IOException {
