@@ -1,26 +1,19 @@
 package io.mosip.datashare.util;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.mosip.datashare.constant.ApiName;
 import io.mosip.datashare.constant.LoggerFileConstant;
 import io.mosip.datashare.dto.PolicyManagerResponseDto;
 import io.mosip.datashare.dto.PolicyResponseDto;
@@ -42,7 +35,7 @@ public class PolicyUtil {
 
 	/** The rest template. */
 	@Autowired
-	private RestTemplate restTemplate;
+	private RestUtil restUtil;
 
 	/** The cryptomanager encrypt url. */
 	@Value("${PARTNER_POLICY}")
@@ -58,21 +51,12 @@ public class PolicyUtil {
 		try {
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
 					LoggerFileConstant.SUBSCRIBERID.toString(), "PolicyUtil::getPolicyDetail()::entry");
-		String uri = partnerPolicyUrl;
-		Map<String, String> parameters = new HashMap<>();
-		parameters.put("partnerId", subscriberId);
-		parameters.put("policyId", policyId);
-			UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(uri);
+			Map<String, String> pathsegments = new HashMap<>();
+			pathsegments.put("partnerId", subscriberId);
+			pathsegments.put("policyId", policyId);
+			String responseString = restUtil.getApi(ApiName.PARTNER_POLICY, pathsegments, String.class);
 
-			URI urlWithPath = builder.build(parameters);
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-		HttpEntity httpEntity = new HttpEntity<>(headers);
-			ResponseEntity<String> response = restTemplate.exchange(urlWithPath.toString(), HttpMethod.GET, httpEntity,
-				String.class);
-
-
-			PolicyManagerResponseDto responseObject = mapper.readValue(response.getBody(),
+			PolicyManagerResponseDto responseObject = mapper.readValue(responseString,
 					PolicyManagerResponseDto.class);
 			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
 				ServiceError error = responseObject.getErrors().get(0);
@@ -94,11 +78,11 @@ public class PolicyUtil {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 					LoggerFileConstant.POLICYID.toString(),
 					"PolicyUtil::getPolicyDetail():: error with error message" + ExceptionUtils.getStackTrace(e));
-			if (e instanceof HttpClientErrorException) {
-				HttpClientErrorException httpClientException = (HttpClientErrorException) e;
+			if (e.getCause() instanceof HttpClientErrorException) {
+				HttpClientErrorException httpClientException = (HttpClientErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpClientException.getResponseBodyAsString());
-			} else if (e instanceof HttpServerErrorException) {
-				HttpServerErrorException httpServerException = (HttpServerErrorException) e;
+			} else if (e.getCause() instanceof HttpServerErrorException) {
+				HttpServerErrorException httpServerException = (HttpServerErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpServerException.getResponseBodyAsString());
 			} else {
 				throw new PolicyException(e);

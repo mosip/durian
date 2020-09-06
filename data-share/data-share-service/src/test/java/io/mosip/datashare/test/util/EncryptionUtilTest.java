@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,15 +19,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 import org.springframework.core.env.Environment;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -34,9 +27,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.mosip.datashare.dto.CryptomanagerResponseDto;
 import io.mosip.datashare.dto.EncryptResponseDto;
-import io.mosip.datashare.exception.ApiNotAccessibleException;
 import io.mosip.datashare.exception.DataEncryptionFailureException;
 import io.mosip.datashare.util.EncryptionUtil;
+import io.mosip.datashare.util.RestUtil;
 import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.util.CryptoUtil;
 
@@ -52,7 +45,7 @@ public class EncryptionUtilTest {
 
 	/** The rest template. */
 	@Mock
-	private RestTemplate restTemplate;
+	private RestUtil restUtil;
 
 	/** The mapper. */
 	@Mock
@@ -64,21 +57,22 @@ public class EncryptionUtilTest {
 	private CryptomanagerResponseDto cryptomanagerResponseDto;
 
 	String response;
+	byte[] sample;
 
-
+	String test;
 
 	@Before
 	public void setUp() throws JsonParseException, JsonMappingException, IOException {
-		ReflectionTestUtils.setField(encryptionUtil, "cryptomanagerEncryptUrl", "testurl");
+		test = "testdata";
+		sample = test.getBytes();
 		cryptomanagerResponseDto = new CryptomanagerResponseDto();
 		EncryptResponseDto responseData = new EncryptResponseDto();
-		responseData.setData("testdata");
+		responseData.setData(test);
 		cryptomanagerResponseDto.setResponse(responseData);
 		response = "testdata";
 
-		Mockito.when(restTemplate.exchange(Mockito.anyString(), Mockito.any(HttpMethod.class),
-				Mockito.any(HttpEntity.class), Mockito.any(Class.class)))
-				.thenReturn(new ResponseEntity<String>(response, HttpStatus.OK));
+		Mockito.when(restUtil.postApi(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
+				Mockito.any(), Mockito.any())).thenReturn(response);
 		Mockito.when(objectMapper.readValue(response, CryptomanagerResponseDto.class))
 				.thenReturn(cryptomanagerResponseDto);
 		Mockito.when(environment.getProperty("mosip.data.share.datetime.pattern"))
@@ -90,12 +84,12 @@ public class EncryptionUtilTest {
 	@Test
 	public void encryptionSuccessTest() throws IOException {
 
-		String test = "testdata";
-		byte[] sample = test.getBytes();
+
 		PowerMockito.mockStatic(CryptoUtil.class);
-		Mockito.when(CryptoUtil.decodeBase64(Mockito.anyString())).thenReturn(sample);
+		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(test);
 		byte[] encryptedData = encryptionUtil.encryptData(sample, "");
-		assertEquals(sample, encryptedData);
+		String resultData = IOUtils.toString(encryptedData);
+		assertEquals(test, resultData);
 
 	}
 
@@ -110,32 +104,6 @@ public class EncryptionUtilTest {
 
 	}
 
-	@Test(expected = ApiNotAccessibleException.class)
-	public void testHttpClientException() throws JsonParseException, JsonMappingException, IOException {
-		HttpClientErrorException httpClientErrorException = new HttpClientErrorException(HttpStatus.BAD_REQUEST,
-				"error");
-		String test = "testdata";
-		byte[] sample = test.getBytes();
-		PowerMockito.mockStatic(CryptoUtil.class);
-		Mockito.when(CryptoUtil.decodeBase64(Mockito.anyString())).thenReturn(sample);
-		Mockito.when(restTemplate.exchange(Mockito.anyString(), Mockito.any(HttpMethod.class),
-				Mockito.any(HttpEntity.class), Mockito.any(Class.class))).thenThrow(httpClientErrorException);
-		encryptionUtil.encryptData(sample, "");
-
-	}
-
-	@Test(expected = ApiNotAccessibleException.class)
-	public void testHttpServerException() throws JsonParseException, JsonMappingException, IOException {
-		HttpServerErrorException httpServerErrorException = new HttpServerErrorException(HttpStatus.BAD_REQUEST,
-				"error");
-		String test = "testdata";
-		byte[] sample = test.getBytes();
-		PowerMockito.mockStatic(CryptoUtil.class);
-		Mockito.when(CryptoUtil.decodeBase64(Mockito.anyString())).thenReturn(sample);
-		Mockito.when(restTemplate.exchange(Mockito.anyString(), Mockito.any(HttpMethod.class),
-				Mockito.any(HttpEntity.class), Mockito.any(Class.class))).thenThrow(httpServerErrorException);
-		encryptionUtil.encryptData(sample, "");
-	}
 
 	@Test(expected = DataEncryptionFailureException.class)
 	public void encryptionFailureTest() throws JsonParseException, JsonMappingException, IOException {
@@ -145,8 +113,7 @@ public class EncryptionUtilTest {
 		List<ServiceError> errors = new ArrayList<ServiceError>();
 		errors.add(error);
 		cryptomanagerResponseDto.setErrors(errors);
-		String test = "testdata";
-		byte[] sample = test.getBytes();
+
 
 		encryptionUtil.encryptData(sample, "");
 	}
