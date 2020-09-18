@@ -224,7 +224,8 @@ public class DataShareServiceImpl implements DataShareService {
 		try {
 			boolean isDataShareAllow = getAndUpdateMetaData(randomShareKey, policyId, subcriberId);
 			if (isDataShareAllow) {
-				InputStream inputStream = objectStoreAdapter.getObject(subcriberId, policyId, randomShareKey);
+				InputStream inputStream = objectStoreAdapter.getObject(subcriberId, policyId, null, null,
+						randomShareKey);
 				if (inputStream != null) {
 					dataBytes = IOUtils.toByteArray(inputStream);
 				} else {
@@ -251,7 +252,8 @@ public class DataShareServiceImpl implements DataShareService {
 	private boolean getAndUpdateMetaData(String randomShareKey, String policyId, String subcriberId) {
 		boolean isDataShareAllow = false;
 
-		Map<String, Object> metaDataMap = objectStoreAdapter.getMetaData(subcriberId, policyId, randomShareKey);
+		Map<String, Object> metaDataMap = objectStoreAdapter.getMetaData(subcriberId, policyId, null, null,
+				randomShareKey);
 		if (metaDataMap == null || metaDataMap.isEmpty()) {
 			throw new DataShareNotFoundException();
 		}else {
@@ -259,7 +261,8 @@ public class DataShareServiceImpl implements DataShareService {
 			int transactionAllowed = Integer.parseInt((String) metaDataMap.get(TRANSACTIONSALLOWED));
 			if(transactionAllowed >= 1) {
 				isDataShareAllow=true;
-				objectStoreAdapter.decMetadata(subcriberId, policyId, randomShareKey, "transactionsAllowed");
+				objectStoreAdapter.decMetadata(subcriberId, policyId, null, null, randomShareKey,
+						"transactionsAllowed");
 
 			}
 
@@ -313,8 +316,9 @@ public class DataShareServiceImpl implements DataShareService {
 		// TODO key should be unique
 		String randomShareKey = RandomStringUtils.randomAlphanumeric(length);
 
-		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, randomShareKey, filedata);
-		objectStoreAdapter.addObjectMetaData(subscriberId, policyId, randomShareKey, metaDataMap);
+		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, null, null, randomShareKey,
+				filedata);
+		objectStoreAdapter.addObjectMetaData(subscriberId, policyId, null, null, randomShareKey, metaDataMap);
 		LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), randomShareKey,
 				"Is data stored to object store" + isDataStored);
 
