@@ -123,18 +123,22 @@ public class DataShareServiceImplTest {
 		
 		Mockito.when(digitalSignatureUtil.sign(dataBytes))
 		.thenReturn(dataBytes.toString());
-		Mockito.when(objectStoreAdapter.putObject(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
+		Mockito.when(objectStoreAdapter.putObject(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
+				Mockito.any(), Mockito.anyString(),
 				Mockito.any())).thenReturn(true);
-		Mockito.when(objectStoreAdapter.addObjectMetaData(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
+		Mockito.when(objectStoreAdapter.addObjectMetaData(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
+				Mockito.any(), Mockito.anyString(),
 				Mockito.any())).thenReturn(metaDataMap);
 		URL u = PowerMockito.mock(URL.class);
 
 		PowerMockito.whenNew(URL.class).withArguments(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())
 				.thenReturn(u);
 		
-		Mockito.when(objectStoreAdapter.getMetaData(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()
+		Mockito.when(objectStoreAdapter.getMetaData(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
+				Mockito.any(), Mockito.anyString()
 				)).thenReturn(metaDataMap);
-		Mockito.when(objectStoreAdapter.getObject(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+		Mockito.when(objectStoreAdapter.getObject(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
+				Mockito.any(), Mockito.anyString()))
 				.thenReturn(inputStream);
 		Mockito.when(cacheUtil.getShortUrlData(Mockito.any(), Mockito.any(), Mockito.any(),
 				Mockito.any()))
@@ -170,7 +174,8 @@ public class DataShareServiceImplTest {
 
 	@Test(expected = DataShareNotFoundException.class)
 	public void dataShareNotFoundExceptionTest() {
-		Mockito.when(objectStoreAdapter.getObject(Mockito.anyString(), Mockito.anyString(), Mockito.anyString()))
+		Mockito.when(objectStoreAdapter.getObject(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
+				Mockito.any(), Mockito.anyString()))
 				.thenReturn(null);
 		dataShareServiceImpl.getDataFile(POLICY_ID, SUBSCRIBER_ID, "12dfsdff");
 	}
