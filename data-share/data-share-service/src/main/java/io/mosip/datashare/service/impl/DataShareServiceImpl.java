@@ -104,7 +104,7 @@ public class DataShareServiceImpl implements DataShareService {
 
 	public static final String PARTNERBASED = "partnerBased";
 
-	public static final String PARTNERSECRET = "partnerSecret";
+	public static final String NONE = "none";
 
 	public static final String TRANSACTIONSALLOWED = "transactionsallowed";
 	/*
@@ -133,11 +133,11 @@ public class DataShareServiceImpl implements DataShareService {
 							policyId, subscriberId + "encryptionNeeded" + dataSharePolicies.getEncryptionType());
 					encryptedData = encryptionUtil.encryptData(fileData, subscriberId);
 
-				} else {
-					// TODO how we will get secret key
-					encryptedData = encryptionUtil.encryptDataUsingKey(fileData, subscriberId.getBytes());
+				} else if (NONE.equalsIgnoreCase(dataSharePolicies.getEncryptionType())) {
+
+					encryptedData = fileData;
 					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-							policyId, subscriberId + "encryptionNeeded" + dataSharePolicies.getEncryptionType());
+							policyId, subscriberId + "Without encryption" + dataSharePolicies.getEncryptionType());
 
 				}
 				randomShareKey = storefile(aclMap, new ByteArrayInputStream(encryptedData), policyId, subscriberId);
