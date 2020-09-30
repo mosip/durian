@@ -338,7 +338,7 @@ public class DataShareServiceImpl implements DataShareService {
 		
 		if (data != null && !data.isEmpty()) {
 			String[] datas = data.split(",");
-			if (datas != null) {
+			if (datas != null && datas.length == 3) {
 				return getDataFile(datas[0], datas[1], datas[2]);
 			} else {
 				throw new DataShareNotFoundException();

@@ -129,10 +129,7 @@ public class DataShareServiceImplTest {
 		Mockito.when(objectStoreAdapter.addObjectMetaData(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
 				Mockito.any(), Mockito.anyString(),
 				Mockito.any())).thenReturn(metaDataMap);
-		URL u = PowerMockito.mock(URL.class);
 
-		PowerMockito.whenNew(URL.class).withArguments(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())
-				.thenReturn(u);
 		
 		Mockito.when(objectStoreAdapter.getMetaData(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
 				Mockito.any(), Mockito.anyString()
@@ -146,6 +143,24 @@ public class DataShareServiceImplTest {
 	}
 
 	@Test
+	public void createDataShareSuccessWithoutEncryptionTest() {
+
+		policyResponseDto = new PolicyResponseDto();
+		DataShareDto dataSharePolicies = new DataShareDto();
+		dataSharePolicies.setEncryptionType("none");
+		dataSharePolicies.setShareDomain("dev.mosip.net");
+		dataSharePolicies.setTransactionsAllowed("2");
+		dataSharePolicies.setValidForInMinutes("60");
+		policyAttributesDto = new PolicyAttributesDto();
+		policyAttributesDto.setDataSharePolicies(dataSharePolicies);
+		policyResponseDto.setPolicies(policyAttributesDto);
+		Mockito.when(policyUtil.getPolicyDetail(Mockito.anyString(), Mockito.anyString()))
+				.thenReturn(policyResponseDto);
+		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
+		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
+	}
+
+	@Test
 	public void createDataShareSuccessTest() {
 
 		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
@@ -154,6 +169,7 @@ public class DataShareServiceImplTest {
 
 	@Test
 	public void createDataShareSuccesswithShortUrlTest() {
+		Mockito.when(env.getProperty("mosip.data.share.key.length")).thenReturn("8");
 		ReflectionTestUtils.setField(dataShareServiceImpl, "isShortUrl", true);
 		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
 		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
@@ -164,7 +180,6 @@ public class DataShareServiceImplTest {
 		multiPartFile=null;
 		dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
 	}
-
 
 	@Test
 	public void getDataFileSuccessTest() {
@@ -179,7 +194,15 @@ public class DataShareServiceImplTest {
 				.thenReturn(null);
 		dataShareServiceImpl.getDataFile(POLICY_ID, SUBSCRIBER_ID, "12dfsdff");
 	}
+	
+	
+	@Test(expected = DataShareNotFoundException.class)
+	public void testMetaDataNull() {
 
+		Mockito.when(objectStoreAdapter.getMetaData(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
+				Mockito.any(), Mockito.anyString())).thenReturn(null);
+		dataShareServiceImpl.getDataFile(POLICY_ID, SUBSCRIBER_ID, "12dfsdff");
+	}
 	@Test(expected = DataShareExpiredException.class)
 	public void dataShareExpiredExceptionTest() {
 		metaDataMap.put("transactionsallowed", "0");
@@ -188,7 +211,22 @@ public class DataShareServiceImplTest {
 
 	@Test
 	public void getDataFileWithShortKeySuccessTest() {
+
 		ReflectionTestUtils.setField(dataShareServiceImpl, "isShortUrl", true);
 		assertNotNull(dataShareServiceImpl.getDataFile("12dfsdff"));
+	}
+
+	@Test(expected = DataShareNotFoundException.class)
+	public void getDataFileFailureTest() {
+		Mockito.when(cacheUtil.getShortUrlData(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+				.thenReturn("");
+		dataShareServiceImpl.getDataFile("12dfsdff");
+	}
+
+	@Test(expected = DataShareNotFoundException.class)
+	public void getDataFileExceptionTest() {
+		Mockito.when(cacheUtil.getShortUrlData(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
+				.thenReturn("" + "," + "");
+		dataShareServiceImpl.getDataFile("12dfsdff");
 	}
 }
