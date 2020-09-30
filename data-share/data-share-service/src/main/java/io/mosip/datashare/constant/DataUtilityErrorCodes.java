@@ -9,7 +9,8 @@ public enum DataUtilityErrorCodes {
 	URL_CREATION_EXCEPTION("DAT-SER-004", "URL creation exception"),
 	SIGNATURE_EXCEPTION("DAT-SER-005", "Failed to generate digital signature"),
 	DATA_SHARE_NOT_FOUND_EXCEPTION("DAT-SER-006", "Data share not found"),
-	DATA_SHARE_EXPIRED_EXCEPTION("DAT-SER-006", "Data share usuage expired");
+	DATA_SHARE_EXPIRED_EXCEPTION("DAT-SER-006", "Data share usuage expired"),
+	POLICY_EXCEPTION("DAT-SER-007", "Exception while fetching policy details");
 
 	private final String errorCode;
 	private final String errorMessage;

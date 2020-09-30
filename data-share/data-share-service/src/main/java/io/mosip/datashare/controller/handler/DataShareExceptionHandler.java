@@ -19,6 +19,7 @@ import io.mosip.datashare.exception.DataEncryptionFailureException;
 import io.mosip.datashare.exception.DataShareExpiredException;
 import io.mosip.datashare.exception.DataShareNotFoundException;
 import io.mosip.datashare.exception.FileException;
+import io.mosip.datashare.exception.PolicyException;
 import io.mosip.datashare.exception.SignatureException;
 import io.mosip.datashare.exception.URLCreationException;
 import io.mosip.kernel.core.exception.BaseCheckedException;
@@ -71,6 +72,11 @@ public class DataShareExceptionHandler {
 
 	@ExceptionHandler(URLCreationException.class)
 	public ResponseEntity<DataShareResponseDto> uRLCreationException(URLCreationException e) {
+		return buildDataShareApiExceptionResponse((Exception) e);
+	}
+
+	@ExceptionHandler(PolicyException.class)
+	public ResponseEntity<DataShareResponseDto> policyException(PolicyException e) {
 		return buildDataShareApiExceptionResponse((Exception) e);
 	}
 

@@ -21,8 +21,8 @@ import io.mosip.commons.khazana.spi.ObjectStoreAdapter;
 import io.mosip.datashare.constant.DataUtilityErrorCodes;
 import io.mosip.datashare.constant.LoggerFileConstant;
 import io.mosip.datashare.dto.DataShare;
-import io.mosip.datashare.dto.DataSharePolicies;
-import io.mosip.datashare.dto.PolicyDetailResponseDto;
+import io.mosip.datashare.dto.DataShareDto;
+import io.mosip.datashare.dto.PolicyResponseDto;
 import io.mosip.datashare.exception.DataShareExpiredException;
 import io.mosip.datashare.exception.DataShareNotFoundException;
 import io.mosip.datashare.exception.FileException;
@@ -35,7 +35,6 @@ import io.mosip.datashare.util.EncryptionUtil;
 import io.mosip.datashare.util.PolicyUtil;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
-import io.mosip.kernel.core.util.CryptoUtil;
 
 
 
@@ -105,7 +104,7 @@ public class DataShareServiceImpl implements DataShareService {
 
 	public static final String PARTNERBASED = "partnerBased";
 
-	public static final String PARTNERSECRET = "partnerSecret";
+	public static final String NONE = "none";
 
 	public static final String TRANSACTIONSALLOWED = "transactionsallowed";
 	/*
@@ -124,21 +123,21 @@ public class DataShareServiceImpl implements DataShareService {
 			String randomShareKey;
 			try {
 				byte[] fileData = file.getBytes();
-				PolicyDetailResponseDto policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
+				PolicyResponseDto policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
 
 				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, policyDetailResponse);
-				DataSharePolicies dataSharePolicies = policyDetailResponse.getPolicies().getDataSharePolicies();
+				DataShareDto dataSharePolicies = policyDetailResponse.getPolicies().getDataSharePolicies();
 				byte[] encryptedData = null;
 				if (PARTNERBASED.equalsIgnoreCase(dataSharePolicies.getEncryptionType())) {
 					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 							policyId, subscriberId + "encryptionNeeded" + dataSharePolicies.getEncryptionType());
 					encryptedData = encryptionUtil.encryptData(fileData, subscriberId);
 
-				} else {
-					// TODO how we will get secret key
-					encryptedData = encryptionUtil.encryptDataUsingKey(fileData, subscriberId.getBytes());
+				} else if (NONE.equalsIgnoreCase(dataSharePolicies.getEncryptionType())) {
+
+					encryptedData = fileData;
 					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-							policyId, subscriberId + "encryptionNeeded" + dataSharePolicies.getEncryptionType());
+							policyId, subscriberId + "Without encryption" + dataSharePolicies.getEncryptionType());
 
 				}
 				randomShareKey = storefile(aclMap, new ByteArrayInputStream(encryptedData), policyId, subscriberId);
@@ -149,8 +148,8 @@ public class DataShareServiceImpl implements DataShareService {
 				dataShare.setUrl(dataShareUrl);
 				dataShare.setPolicyId(policyId);
 				dataShare.setSubscriberId(subscriberId);
-				dataShare.setValidForInMinutes(dataSharePolicies.getValidForInMinutes());
-				dataShare.setTransactionsAllowed(dataSharePolicies.getTransactionsAllowed());
+				dataShare.setValidForInMinutes(Integer.parseInt(dataSharePolicies.getValidForInMinutes()));
+				dataShare.setTransactionsAllowed(Integer.parseInt(dataSharePolicies.getTransactionsAllowed()));
 				LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 						"Datashare" + dataShare.toString());
 				LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
@@ -225,9 +224,10 @@ public class DataShareServiceImpl implements DataShareService {
 		try {
 			boolean isDataShareAllow = getAndUpdateMetaData(randomShareKey, policyId, subcriberId);
 			if (isDataShareAllow) {
-				InputStream inputStream = objectStoreAdapter.getObject(subcriberId, policyId, randomShareKey);
+				InputStream inputStream = objectStoreAdapter.getObject(subcriberId, policyId, null, null,
+						randomShareKey);
 				if (inputStream != null) {
-					dataBytes = CryptoUtil.encodeBase64(IOUtils.toByteArray(inputStream)).getBytes();
+					dataBytes = IOUtils.toByteArray(inputStream);
 				} else {
 					throw new DataShareNotFoundException();
 				}
@@ -252,7 +252,8 @@ public class DataShareServiceImpl implements DataShareService {
 	private boolean getAndUpdateMetaData(String randomShareKey, String policyId, String subcriberId) {
 		boolean isDataShareAllow = false;
 
-		Map<String, Object> metaDataMap = objectStoreAdapter.getMetaData(subcriberId, policyId, randomShareKey);
+		Map<String, Object> metaDataMap = objectStoreAdapter.getMetaData(subcriberId, policyId, null, null,
+				randomShareKey);
 		if (metaDataMap == null || metaDataMap.isEmpty()) {
 			throw new DataShareNotFoundException();
 		}else {
@@ -260,7 +261,8 @@ public class DataShareServiceImpl implements DataShareService {
 			int transactionAllowed = Integer.parseInt((String) metaDataMap.get(TRANSACTIONSALLOWED));
 			if(transactionAllowed >= 1) {
 				isDataShareAllow=true;
-				objectStoreAdapter.decMetadata(subcriberId, policyId, randomShareKey, "transactionsAllowed");
+				objectStoreAdapter.decMetadata(subcriberId, policyId, null, null, randomShareKey,
+						"transactionsAllowed");
 
 			}
 
@@ -279,14 +281,13 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @return the map
 	 */
 	private Map<String, Object> prepareMetaData(String subscriberId, String policyId,
-			PolicyDetailResponseDto policyDetailResponse) {
-		// TODO prepare ACL MAP as per policy details
-		// Map created with mocked data
-		DataSharePolicies dataSharePolicies = policyDetailResponse.getPolicies().getDataSharePolicies();
+			PolicyResponseDto policyResponseDto) {
+
+		DataShareDto dataSharePolicies = policyResponseDto.getPolicies().getDataSharePolicies();
 		Map<String, Object> aclMap = new HashMap<>();
 
 		aclMap.put("policyid", policyId);
-		aclMap.put("policypublishdate", policyDetailResponse.getPublishDate());
+		aclMap.put("policypublishdate", policyResponseDto.getPublishDate());
 		aclMap.put("subscriberId", subscriberId);
 		aclMap.put("validforinminutes", dataSharePolicies.getValidForInMinutes());
 		aclMap.put("transactionsallowed", dataSharePolicies.getTransactionsAllowed());
@@ -315,8 +316,9 @@ public class DataShareServiceImpl implements DataShareService {
 		// TODO key should be unique
 		String randomShareKey = RandomStringUtils.randomAlphanumeric(length);
 
-		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, randomShareKey, filedata);
-		objectStoreAdapter.addObjectMetaData(subscriberId, policyId, randomShareKey, metaDataMap);
+		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, null, null, randomShareKey,
+				filedata);
+		objectStoreAdapter.addObjectMetaData(subscriberId, policyId, null, null, randomShareKey, metaDataMap);
 		LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), randomShareKey,
 				"Is data stored to object store" + isDataStored);
 
