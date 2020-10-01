@@ -107,6 +107,9 @@ public class DataShareServiceImpl implements DataShareService {
 	public static final String NONE = "none";
 
 	public static final String TRANSACTIONSALLOWED = "transactionsallowed";
+
+	@Value("${mosip.data.share.protocol}")
+	private String httpProtocol;
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -181,8 +184,11 @@ public class DataShareServiceImpl implements DataShareService {
 	 */
 	private String constructURL(String randomShareKey, String shareDomain, String policyId, String subscriberId) {
 		URL dataShareUrl = null;
-
+		String protocol = PROTOCOL;
 		try {
+			if (httpProtocol != null && !httpProtocol.isEmpty()) {
+				protocol = httpProtocol;
+			}
 			if (isShortUrl) {
 				int length = DEFAULT_KEY_LENGTH;
 				if (env.getProperty(KEY_LENGTH) != null) {
