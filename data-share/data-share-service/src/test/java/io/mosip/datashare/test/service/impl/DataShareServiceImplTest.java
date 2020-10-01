@@ -95,6 +95,7 @@ public class DataShareServiceImplTest {
 	public void setUp() throws Exception {
 		ReflectionTestUtils.setField(dataShareServiceImpl, "servletPath", "/");
 		ReflectionTestUtils.setField(dataShareServiceImpl, "isShortUrl", false);
+		ReflectionTestUtils.setField(dataShareServiceImpl, "httpProtocol", "https");
 		PowerMockito.mockStatic(RandomStringUtils.class);
 		Mockito.when(RandomStringUtils.randomAlphanumeric(Mockito.anyInt())).thenReturn("dfg3456f");
 		metaDataMap = new HashMap<String, Object>();
