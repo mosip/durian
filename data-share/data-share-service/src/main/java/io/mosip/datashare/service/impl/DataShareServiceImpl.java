@@ -107,6 +107,9 @@ public class DataShareServiceImpl implements DataShareService {
 	public static final String NONE = "none";
 
 	public static final String TRANSACTIONSALLOWED = "transactionsallowed";
+
+	@Value("${mosip.data.share.protocol}")
+	private String httpProtocol;
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -181,8 +184,12 @@ public class DataShareServiceImpl implements DataShareService {
 	 */
 	private String constructURL(String randomShareKey, String shareDomain, String policyId, String subscriberId) {
 		URL dataShareUrl = null;
-
+		String protocol = PROTOCOL;
+		String url = null;
 		try {
+			if (httpProtocol != null && !httpProtocol.isEmpty()) {
+				protocol = httpProtocol;
+			}
 			if (isShortUrl) {
 				int length = DEFAULT_KEY_LENGTH;
 				if (env.getProperty(KEY_LENGTH) != null) {
@@ -191,13 +198,15 @@ public class DataShareServiceImpl implements DataShareService {
 				// TODO key should be unique
 				String shortRandomShareKey = RandomStringUtils.randomAlphanumeric(length);
 				cacheUtil.getShortUrlData(shortRandomShareKey, policyId, subscriberId, randomShareKey);
-				dataShareUrl = new URL(PROTOCOL, shareDomain,
+				dataShareUrl = new URL(protocol, shareDomain,
 						servletPath + DATASHARE + FORWARD_SLASH + shortRandomShareKey);
 
 			} else {  
-				dataShareUrl = new URL(PROTOCOL, shareDomain, servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
+				dataShareUrl = new URL(protocol, shareDomain, servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
 						+ policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey);
 			}
+			url = dataShareUrl.toString();
+			url = url.replaceAll("[\\[\\]]", "");
 
 		} catch (MalformedURLException e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
@@ -205,7 +214,7 @@ public class DataShareServiceImpl implements DataShareService {
 					DataUtilityErrorCodes.URL_CREATION_EXCEPTION.getErrorMessage() + ExceptionUtils.getStackTrace(e));
 			new URLCreationException(e);
 		}
-		return dataShareUrl.toString();
+		return url;
 	}
 
 
