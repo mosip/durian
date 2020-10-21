@@ -1,13 +1,8 @@
 package io.mosip.datashare.util;
 
 import java.io.IOException;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.Security;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -25,7 +20,6 @@ import org.springframework.web.client.HttpServerErrorException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.mosip.datashare.constant.ApiName;
-import io.mosip.datashare.constant.DataUtilityErrorCodes;
 import io.mosip.datashare.constant.LoggerFileConstant;
 import io.mosip.datashare.dto.CryptomanagerRequestDto;
 import io.mosip.datashare.dto.CryptomanagerResponseDto;
@@ -154,22 +148,5 @@ public class EncryptionUtil {
     	
     }
 
-	public byte[] encryptDataUsingKey(byte[] data, byte[] encryptionKey) {
-		// supports larger key lengths, Not required to specified in java 9
-		Security.setProperty("crypto.policy", "unlimited");
-		final SecretKey sessionKey = keyGenerator.getSymmetricKey();
-		final byte[] cipherText = cryptoCore.symmetricEncrypt(sessionKey, data, null);
-		PublicKey publicKey = null;
-		try {
-			publicKey = KeyFactory.getInstance("RSA")
-					.generatePublic(new X509EncodedKeySpec(CryptoUtil.decodeBase64(new String(encryptionKey))));
-		} catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
-			throw new DataEncryptionFailureException(
-					DataUtilityErrorCodes.DATA_ENCRYPTION_FAILURE_EXCEPTION.getErrorMessage(),
-					e);
-		}
-		byte[] encryptedSessionKey = cryptoCore.asymmetricEncrypt(publicKey, sessionKey.getEncoded());
-		return CryptoUtil.combineByteArray(cipherText, encryptedSessionKey, KEY_SPLITTER);
-	}
 
 }
