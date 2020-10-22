@@ -54,8 +54,6 @@ public class EncryptionUtil {
 
 	/** The Constant DATETIME_PATTERN. */
 	private static final String DATETIME_PATTERN = "mosip.data.share.datetime.pattern";
-	
-	private static final String AUTHORIZATION = "Authorization=";
 
 	/** The env. */
 	@Autowired
@@ -158,7 +156,6 @@ public class EncryptionUtil {
     	
     }
 
-	@SuppressWarnings("unchecked")
 	private void makeCertificateAvailable(String partnerId) throws Exception {
 		
 		String getCertificateQueryParameterName="applicationId,referenceId";
@@ -173,6 +170,14 @@ public class EncryptionUtil {
 		if(certificateResponseobj!=null && certificateResponseobj.getResponse()!=null &&
 				certificateResponseobj.getResponse().getCertificate() !=null&& !certificateResponseobj.getResponse().getCertificate().isEmpty()) {
 			
+			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(), partnerId,
+					"partner Certificate is available in key manager");
+		
+		}else if (certificateResponseobj != null && certificateResponseobj.getErrors() != null && !certificateResponseobj.getErrors().isEmpty()) {
+		
+			ServiceError error = certificateResponseobj.getErrors().get(0);
+			throw new DataEncryptionFailureException(error.getMessage());
+		
 		}else  {
 			
 		Map<String, String> pathsegments = new HashMap<>();

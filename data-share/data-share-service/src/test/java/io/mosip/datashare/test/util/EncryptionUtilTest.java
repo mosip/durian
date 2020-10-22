@@ -156,6 +156,21 @@ public class EncryptionUtilTest {
 	}
 	
 	@Test(expected = DataEncryptionFailureException.class)
+	public void encryptionFailuregetCertificateTest() throws IOException {
+		ServiceError error = new ServiceError("","");
+		List<ServiceError> errors=new ArrayList<>();
+		errors.add(error);
+		certificateResponseobj.setErrors(errors);
+		Mockito.when(objectMapper.readValue(response, KeyManagerGetCertificateResponseDto.class))
+		.thenReturn(certificateResponseobj);
+		PowerMockito.mockStatic(CryptoUtil.class);
+		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(test);
+		byte[] encryptedData = encryptionUtil.encryptData(sample, "112");
+		
+
+	}
+	
+	@Test(expected = DataEncryptionFailureException.class)
 	public void encryptionFailureCertificateUploadErrorTest() throws IOException {
 		ServiceError error = new ServiceError("","");
 		List<ServiceError> errors=new ArrayList<>();
