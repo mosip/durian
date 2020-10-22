@@ -157,7 +157,7 @@ public class DataShareServiceImpl implements DataShareService {
 						"Datashare" + dataShare.toString());
 				LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 						"DataShareServiceImpl::createDataShare()::exit");
-			} catch (IOException e) {
+			} catch (Exception e) {
 				LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 						LoggerFileConstant.POLICYID.toString(),
 						IO_EXCEPTION + ExceptionUtils.getStackTrace(e));

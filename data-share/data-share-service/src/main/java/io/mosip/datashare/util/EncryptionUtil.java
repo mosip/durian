@@ -175,47 +175,52 @@ public class EncryptionUtil {
 		
 		}else if (certificateResponseobj != null && certificateResponseobj.getErrors() != null && !certificateResponseobj.getErrors().isEmpty()) {
 		
+			int count=0;
+			for(ServiceError error:certificateResponseobj.getErrors()) {
+				if(error.getErrorCode().equals("KER-KMS-002") ||error.getErrorCode().equals("KER-KMS-012")) {
+					count++;
+					Map<String, String> pathsegments = new HashMap<>();
+					pathsegments.put("partnerId", partnerId);
+					
+					String partnerCertificateResponse = restUtil.getApi(ApiName.GET_PARTNER_CERTIFICATE,
+							pathsegments, String.class);
+					
+					PartnerGetCertificateResponseDto partnerCertificateResponseObj=mapper.readValue(partnerCertificateResponse,
+							PartnerGetCertificateResponseDto.class);
+					
+					if(partnerCertificateResponseObj!=null && partnerCertificateResponseObj.getResponse()!=null &&
+							partnerCertificateResponseObj.getResponse().getCertificateData() !=null&& !partnerCertificateResponseObj.getResponse().getCertificateData().isEmpty()) {
+							
+						UploadCertificateRequestDto uploadCertificateRequestDto=new UploadCertificateRequestDto();
+						uploadCertificateRequestDto.setApplicationId(applicationId);
+						uploadCertificateRequestDto.setCertificateData(partnerCertificateResponseObj.getResponse().getCertificateData());
+						uploadCertificateRequestDto.setReferenceId(partnerId);
+						RequestWrapper<UploadCertificateRequestDto> uploadrequest=new RequestWrapper<UploadCertificateRequestDto>();
+						uploadrequest.setRequest(uploadCertificateRequestDto);
+						
+						String uploadCertificateResponse=restUtil.postApi(ApiName.KEYMANAGER_UPLOAD_OTHER_DOMAIN_CERTIFICATE, null, "", "",
+								MediaType.APPLICATION_JSON, uploadrequest, String.class);
+						
+						KeyManagerUploadCertificateResponseDto uploadCertificateResponseobj= mapper.readValue(uploadCertificateResponse,
+								KeyManagerUploadCertificateResponseDto.class);
+						
+						if (uploadCertificateResponseobj != null && uploadCertificateResponseobj.getErrors() != null && !uploadCertificateResponseobj.getErrors().isEmpty()) {
+							ServiceError error1 = uploadCertificateResponseobj.getErrors().get(0);
+							throw new DataEncryptionFailureException(error1.getMessage());
+						}
+					
+					}else if (partnerCertificateResponseObj != null && partnerCertificateResponseObj.getErrors() != null ) {
+						ServiceError error2 = partnerCertificateResponseObj.getErrors();
+						throw new DataEncryptionFailureException(error2.getMessage());
+					}
+					
+				}
+			}
+			if(count==0) {
 			ServiceError error = certificateResponseobj.getErrors().get(0);
 			throw new DataEncryptionFailureException(error.getMessage());
-		
-		}else  {
-			
-		Map<String, String> pathsegments = new HashMap<>();
-		pathsegments.put("partnerId", partnerId);
-		
-		String partnerCertificateResponse = restUtil.getApi(ApiName.GET_PARTNER_CERTIFICATE,
-				pathsegments, String.class);
-		
-		PartnerGetCertificateResponseDto partnerCertificateResponseObj=mapper.readValue(partnerCertificateResponse,
-				PartnerGetCertificateResponseDto.class);
-		
-		if(partnerCertificateResponseObj!=null && partnerCertificateResponseObj.getResponse()!=null &&
-				partnerCertificateResponseObj.getResponse().getCertificateData() !=null&& !partnerCertificateResponseObj.getResponse().getCertificateData().isEmpty()) {
-				
-			UploadCertificateRequestDto uploadCertificateRequestDto=new UploadCertificateRequestDto();
-			uploadCertificateRequestDto.setApplicationId(applicationId);
-			uploadCertificateRequestDto.setCertificateData(partnerCertificateResponseObj.getResponse().getCertificateData());
-			uploadCertificateRequestDto.setReferenceId(partnerId);
-			RequestWrapper<UploadCertificateRequestDto> uploadrequest=new RequestWrapper<UploadCertificateRequestDto>();
-			uploadrequest.setRequest(uploadCertificateRequestDto);
-			
-			String uploadCertificateResponse=restUtil.postApi(ApiName.KEYMANAGER_UPLOAD_OTHER_DOMAIN_CERTIFICATE, null, "", "",
-					MediaType.APPLICATION_JSON, uploadrequest, String.class);
-			
-			KeyManagerUploadCertificateResponseDto uploadCertificateResponseobj= mapper.readValue(uploadCertificateResponse,
-					KeyManagerUploadCertificateResponseDto.class);
-			
-			if (uploadCertificateResponseobj != null && uploadCertificateResponseobj.getErrors() != null && !uploadCertificateResponseobj.getErrors().isEmpty()) {
-				ServiceError error = uploadCertificateResponseobj.getErrors().get(0);
-				throw new DataEncryptionFailureException(error.getMessage());
 			}
-		
-		}else if (partnerCertificateResponseObj != null && partnerCertificateResponseObj.getErrors() != null ) {
-			ServiceError error = partnerCertificateResponseObj.getErrors();
-			throw new DataEncryptionFailureException(error.getMessage());
 		}
-		
-	} 
 	
 	}
 	
