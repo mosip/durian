@@ -83,6 +83,10 @@ public class EncryptionUtilTest {
 		responseData.setData(test);
 		cryptomanagerResponseDto.setResponse(responseData);
 		certificateResponseobj =new KeyManagerGetCertificateResponseDto();
+		ServiceError error = new ServiceError("KER-KMS-002","ApplicationId not found in Key Policy");
+		List<ServiceError> errors=new ArrayList<>();
+		errors.add(error);
+		certificateResponseobj.setErrors(errors);
 		uploadCertificateResponseobj=new KeyManagerUploadCertificateResponseDto();
 		UploadCertificateResponseDto uploadCertificateResponseDto=new UploadCertificateResponseDto();
 		uploadCertificateResponseDto.setStatus("uploaded");
@@ -142,6 +146,23 @@ public class EncryptionUtilTest {
 	}
 	
 	@Test(expected = DataEncryptionFailureException.class)
+	public void encryptionFailureGetCertificateTest() throws IOException {
+		ServiceError error = new ServiceError("","");
+		List<ServiceError> errors=new ArrayList<>();
+		errors.add(error);
+		certificateResponseobj.setErrors(errors);
+		Mockito.when(objectMapper.readValue(response, KeyManagerGetCertificateResponseDto.class))
+		.thenReturn(certificateResponseobj);
+
+		PowerMockito.mockStatic(CryptoUtil.class);
+		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(test);
+		byte[] encryptedData = encryptionUtil.encryptData(sample, "112");
+		String resultData = IOUtils.toString(encryptedData);
+		assertEquals(test, resultData);
+
+	}
+	
+	@Test(expected = DataEncryptionFailureException.class)
 	public void encryptionFailurePartnerCertificateTest() throws IOException {
 		ServiceError error = new ServiceError("","");
 		partnerCertificateResponseObj.setErrors(error);
@@ -155,20 +176,7 @@ public class EncryptionUtilTest {
 
 	}
 	
-	@Test(expected = DataEncryptionFailureException.class)
-	public void encryptionFailuregetCertificateTest() throws IOException {
-		ServiceError error = new ServiceError("","");
-		List<ServiceError> errors=new ArrayList<>();
-		errors.add(error);
-		certificateResponseobj.setErrors(errors);
-		Mockito.when(objectMapper.readValue(response, KeyManagerGetCertificateResponseDto.class))
-		.thenReturn(certificateResponseobj);
-		PowerMockito.mockStatic(CryptoUtil.class);
-		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(test);
-		byte[] encryptedData = encryptionUtil.encryptData(sample, "112");
-		
-
-	}
+	
 	
 	@Test(expected = DataEncryptionFailureException.class)
 	public void encryptionFailureCertificateUploadErrorTest() throws IOException {
