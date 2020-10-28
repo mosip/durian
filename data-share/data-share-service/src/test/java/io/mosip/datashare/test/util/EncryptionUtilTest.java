@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
-import org.assertj.core.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,22 +25,20 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.mosip.datashare.constant.ApiName;
 import io.mosip.datashare.dto.CryptomanagerResponseDto;
 import io.mosip.datashare.dto.EncryptResponseDto;
 import io.mosip.datashare.dto.KeyManagerGetCertificateResponseDto;
 import io.mosip.datashare.dto.KeyManagerUploadCertificateResponseDto;
+import io.mosip.datashare.dto.KeyPairGenerateResponseDto;
 import io.mosip.datashare.dto.PartnerCertDownloadResponeDto;
 import io.mosip.datashare.dto.PartnerGetCertificateResponseDto;
-import io.mosip.datashare.dto.PartnerResponseWrapper;
 import io.mosip.datashare.dto.UploadCertificateResponseDto;
 import io.mosip.datashare.exception.DataEncryptionFailureException;
 import io.mosip.datashare.util.EncryptionUtil;
 import io.mosip.datashare.util.RestUtil;
 import io.mosip.kernel.core.exception.ServiceError;
-import io.mosip.kernel.core.http.ResponseWrapper;
 import io.mosip.kernel.core.util.CryptoUtil;
-import io.mosip.kernel.keymanagerservice.dto.KeyPairGenerateResponseDto;
+
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*" })
