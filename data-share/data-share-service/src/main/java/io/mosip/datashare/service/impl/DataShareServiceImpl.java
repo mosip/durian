@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -102,7 +104,7 @@ public class DataShareServiceImpl implements DataShareService {
 	@Value("${mosip.data.share.urlshortner}")
 	private boolean isShortUrl;
 
-	public static final String PARTNERBASED = "partnerBased";
+	public static final String PARTNERBASED = "Partner Based";
 
 	public static final String NONE = "none";
 
@@ -324,8 +326,7 @@ public class DataShareServiceImpl implements DataShareService {
 			length = Integer.parseInt(env.getProperty(KEY_LENGTH));
 		}
 		// TODO key should be unique
-		String randomShareKey = RandomStringUtils.randomAlphanumeric(length);
-
+		String randomShareKey=subscriberId+policyId+DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())+RandomStringUtils.randomAlphanumeric(length);
 		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, null, null, randomShareKey,
 				filedata);
 		objectStoreAdapter.addObjectMetaData(subscriberId, policyId, null, null, randomShareKey, metaDataMap);
