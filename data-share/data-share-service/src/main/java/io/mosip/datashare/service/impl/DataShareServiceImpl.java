@@ -274,7 +274,7 @@ public class DataShareServiceImpl implements DataShareService {
 			if(transactionAllowed >= 1) {
 				isDataShareAllow=true;
 				objectStoreAdapter.decMetadata(subcriberId, policyId, null, null, randomShareKey,
-						"transactionsAllowed");
+						"transactionsallowed");
 
 			}
 
