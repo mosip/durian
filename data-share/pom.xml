@@ -34,7 +34,6 @@
         <kernel.keygenerator.bouncycastle.version>1.0.6</kernel.keygenerator.bouncycastle.version>
         <swagger.version>2.9.2</swagger.version>
         <kernel.core.version>1.2.0-SNAPSHOT</kernel.core.version>
-        <kernel.auth.adaptor.version>1.2.0-SNAPSHOT</kernel.auth.adaptor.version>
         <kernel.logger.logback.version>1.2.0-SNAPSHOT</kernel.logger.logback.version>
         <kernel.keygenerator.bouncycastle.version>1.0.6</kernel.keygenerator.bouncycastle.version>
         <kernel.crypto-jce.version>1.0.6</kernel.crypto-jce.version>
