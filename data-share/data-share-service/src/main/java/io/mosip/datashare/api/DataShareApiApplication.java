@@ -9,7 +9,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @EnableCaching
 @ComponentScan(basePackages = { "io.mosip.datashare.*",
-		"io.mosip.kernel.auth.*","io.mosip.kernel.core.logger.config" })
+		"${mosip.auth.adapter.impl.basepackage}", "io.mosip.kernel.core.logger.config" })
 public class DataShareApiApplication {
 	/**
 	 * The main method. s
