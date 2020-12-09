@@ -99,16 +99,6 @@
             <artifactId>khazana</artifactId>
             <version>${kernel.object.store.version}</version>
         </dependency>
-         <dependency>
-            <groupId>io.mosip.kernel</groupId>
-            <artifactId>kernel-keygenerator-bouncycastle</artifactId>
-            <version>${kernel.keygenerator.bouncycastle.version}</version>
-        </dependency>
-                <dependency>
-            <groupId>io.mosip.kernel</groupId>
-            <artifactId>kernel-crypto-jce</artifactId>
-            <version>${kernel.crypto-jce.version}</version>
-        </dependency>
         <dependency>
 			<groupId>org.powermock</groupId>
 			<artifactId>powermock-module-junit4</artifactId>
@@ -154,6 +144,11 @@
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>
         </dependency>
+         	<dependency>
+    		<groupId>com.googlecode.json-simple</groupId>
+    		<artifactId>json-simple</artifactId>
+    		<version>1.1.1</version>
+		</dependency>
     </dependencies>
 
 

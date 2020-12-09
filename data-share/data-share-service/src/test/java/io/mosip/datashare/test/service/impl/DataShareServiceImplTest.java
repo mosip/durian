@@ -124,7 +124,9 @@ public class DataShareServiceImplTest {
 		Mockito.when(encryptionUtil.encryptData(Mockito.any(), Mockito.anyString()))
 				.thenReturn(dataBytes);
 		
-		Mockito.when(digitalSignatureUtil.sign(dataBytes))
+		Mockito.when(digitalSignatureUtil.jwtSign(dataBytes, Mockito.anyString(), Mockito.anyString(),
+				Mockito.anyString(),
+				Mockito.anyString()))
 		.thenReturn(dataBytes.toString());
 		Mockito.when(objectStoreAdapter.putObject(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
 				Mockito.any(), Mockito.anyString(),

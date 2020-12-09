@@ -1,15 +1,11 @@
 package io.mosip.datashare.util;
 
 import java.io.IOException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,14 +28,12 @@ import io.mosip.datashare.dto.UploadCertificateRequestDto;
 import io.mosip.datashare.exception.ApiNotAccessibleException;
 import io.mosip.datashare.exception.DataEncryptionFailureException;
 import io.mosip.datashare.logger.DataShareLogger;
-import io.mosip.kernel.core.crypto.spi.CryptoCoreSpec;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.RequestWrapper;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
-import io.mosip.kernel.keygenerator.bouncycastle.KeyGenerator;
 
 
 /**
@@ -63,14 +57,6 @@ public class EncryptionUtil {
 	@Autowired
 	private ObjectMapper mapper;
 
-	@Value("${mosip.kernel.data-key-splitter}")
-	private String KEY_SPLITTER;
-
-	@Autowired
-	private KeyGenerator keyGenerator;
-
-	@Autowired
-	private CryptoCoreSpec<byte[], byte[], SecretKey, PublicKey, PrivateKey, String> cryptoCore;
 
 	@Autowired
 	private RestUtil restUtil;

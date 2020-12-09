@@ -1,11 +1,12 @@
 package io.mosip.datashare.util;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -15,8 +16,9 @@ import org.springframework.web.client.HttpServerErrorException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.mosip.datashare.constant.ApiName;
+import io.mosip.datashare.constant.JsonConstants;
 import io.mosip.datashare.constant.LoggerFileConstant;
-import io.mosip.datashare.dto.SignRequestDto;
+import io.mosip.datashare.dto.JWTSignatureRequestDto;
 import io.mosip.datashare.dto.SignResponseDto;
 import io.mosip.datashare.exception.ApiNotAccessibleException;
 import io.mosip.datashare.exception.SignatureException;
@@ -25,7 +27,9 @@ import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.RequestWrapper;
 import io.mosip.kernel.core.logger.spi.Logger;
+import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
+import io.mosip.kernel.core.util.HMACUtils2;
 
 
 /**
@@ -53,48 +57,64 @@ public class DigitalSignatureUtil {
 	@Autowired
 	private RestUtil restUtil;
 
+	@Value("${mosip.data.share.digest.algorithm:SHA256}")
+	private String digestAlg;
+
 	/**
 	 * Sign.
 	 *
 	 * @param packet the packet
 	 * @return the byte[]
 	 */
-	public String sign(byte[] packet) {
+	public String jwtSign(byte[] file, String filname, String partnerId, String creationTime, String expiryTime) {
 		try {
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 					LoggerFileConstant.POLICYID.toString(),
-					"DigitalSignatureUtil::sign()::entry");
-			String packetData = new String(packet, StandardCharsets.UTF_8);
-			SignRequestDto dto = new SignRequestDto();
-			dto.setData(packetData);
-			RequestWrapper<SignRequestDto> request = new RequestWrapper<>();
+					"DigitalSignatureUtil::jwtSign()::entry");
+			String hashData = HMACUtils2.digestAsPlainText(HMACUtils2.generateHash(file));
+			String digestData = CryptoUtil.encodeBase64(hashData.getBytes());
+
+			JSONObject signatureJson = createSignatureJson(filname, partnerId, digestData, creationTime, expiryTime);
+			String dataTobeSigned = mapper.writeValueAsString(signatureJson);
+			String encodedData = CryptoUtil.encodeBase64(dataTobeSigned.getBytes());
+			JWTSignatureRequestDto dto = new JWTSignatureRequestDto();
+			dto.setDataToSign(encodedData);
+			dto.setIncludeCertHash(
+					environment.getProperty("mosip.data.share.includeCertificateHash", Boolean.class));
+			dto.setIncludeCertificate(
+					environment.getProperty("mosip.data.share.includeCertificate", Boolean.class));
+			dto.setIncludePayload(environment.getProperty("mosip.data.share.includePayload", Boolean.class));
+
+			RequestWrapper<JWTSignatureRequestDto> request = new RequestWrapper<>();
 			request.setRequest(dto);
 			request.setMetadata(null);
 			DateTimeFormatter format = DateTimeFormatter.ofPattern(environment.getProperty(DATETIME_PATTERN));
 			LocalDateTime localdatetime = LocalDateTime
 					.parse(DateUtils.getUTCCurrentDateTimeString(environment.getProperty(DATETIME_PATTERN)), format);
 			request.setRequesttime(localdatetime);
-			String responseString = restUtil.postApi(ApiName.KEYMANAGER_SIGN, null, "", "", MediaType.APPLICATION_JSON,
-					request, String.class);
+			String responseString = restUtil.postApi(ApiName.KEYMANAGER_JWTSIGN, null, "", "",
+					MediaType.APPLICATION_JSON, request, String.class);
 
 			SignResponseDto responseObject = mapper.readValue(responseString, SignResponseDto.class);
 			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
 				ServiceError error = responseObject.getErrors().get(0);
 				throw new SignatureException(error.getMessage());
 			}
-			String signedData = responseObject.getResponse().getSignature();
+			String signedData = responseObject.getResponse().getJwtSignedData();
+
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-					LoggerFileConstant.POLICYID.toString(), "DigitalSignatureUtil::sign()::exit");
+					LoggerFileConstant.POLICYID.toString(), "DigitalSignatureUtil::jwtSign()::exit");
 			return signedData;
+
 		} catch (IOException e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 					LoggerFileConstant.POLICYID.toString(),
-					"DigitalSignatureUtil::sign():: error with error message" + ExceptionUtils.getStackTrace(e));
+					"DigitalSignatureUtil::jwtSign():: error with error message" + ExceptionUtils.getStackTrace(e));
 			throw new SignatureException(e);
 		} catch (Exception e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 					LoggerFileConstant.POLICYID.toString(),
-					"DigitalSignatureUtil::sign():: error with error message" + ExceptionUtils.getStackTrace(e));
+					"DigitalSignatureUtil::jwtSign():: error with error message" + ExceptionUtils.getStackTrace(e));
 			if (e.getCause() instanceof HttpClientErrorException) {
 				HttpClientErrorException httpClientException = (HttpClientErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpClientException.getResponseBodyAsString());
@@ -107,6 +127,19 @@ public class DigitalSignatureUtil {
 
 		}
 
+	}
+
+	@SuppressWarnings("unchecked")
+	private JSONObject createSignatureJson(String filname, String partnerId, String digestData, String createTime,
+			String expiryTime) {
+		JSONObject json = new JSONObject();
+		json.put(JsonConstants.FILENAME, filname);
+		json.put(JsonConstants.CREATED, createTime);
+		json.put(JsonConstants.EXPIRES, expiryTime);
+		json.put(JsonConstants.KEYID, partnerId);
+		json.put(JsonConstants.DIGESTALG, digestAlg);
+		json.put(JsonConstants.DIGEST, digestData);
+		return json;
 	}
 
 }
