@@ -40,9 +40,7 @@ import io.mosip.datashare.service.DataShareService;
 import io.mosip.datashare.test.TestBootApplication;
 import io.mosip.datashare.test.config.TestConfig;
 
-/*@RunWith(SpringRunner.class)
-@SpringBootTest
-@AutoConfigureMockMvc*/
+
 @ContextConfiguration(classes = TestConfig.class)
 @TestPropertySource(locations = "classpath:application.properties")
 @RunWith(PowerMockRunner.class)

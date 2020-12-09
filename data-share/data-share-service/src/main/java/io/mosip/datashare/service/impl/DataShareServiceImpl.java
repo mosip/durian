@@ -117,10 +117,6 @@ public class DataShareServiceImpl implements DataShareService {
 	@Value("${mosip.data.share.protocol}")
 	private String httpProtocol;
 
-	/** The environment. */
-	@Autowired
-	private Environment environment;
-
 
 	/** The Constant DATETIME_PATTERN. */
 	private static final String DATETIME_PATTERN = "mosip.data.share.datetime.pattern";
@@ -159,7 +155,7 @@ public class DataShareServiceImpl implements DataShareService {
 				}
 				
 				String createShareTime = DateUtils
-						.getUTCCurrentDateTimeString(environment.getProperty(DATETIME_PATTERN));
+						.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN));
 				String expiryTime = DateUtils
 						.toISOString(DateUtils.addMinutes(DateUtils.parseUTCToDate(createShareTime),
 								Integer.parseInt(dataSharePolicies.getValidForInMinutes())));
