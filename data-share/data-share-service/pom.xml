@@ -165,10 +165,12 @@
 				<version>${spring.boot.version}</version>
 				<configuration>
 					<executable>true</executable>
+					<layout>ZIP</layout>
 				</configuration>
 				<executions>
 					<execution>
 						<goals>
+						<goal>build-info</goal>
 						<goal>repackage</goal>
 						</goals>
 					</execution>
