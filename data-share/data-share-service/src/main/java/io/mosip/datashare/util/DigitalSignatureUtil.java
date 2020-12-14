@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -84,6 +85,10 @@ public class DigitalSignatureUtil {
 			dto.setIncludeCertificate(
 					environment.getProperty("mosip.data.share.includeCertificate", Boolean.class));
 			dto.setIncludePayload(environment.getProperty("mosip.data.share.includePayload", Boolean.class));
+			String certificateUrl = environment.getProperty("mosip.data.share.certificateurl");
+			if (StringUtils.isNotEmpty(certificateUrl)) {
+				dto.setCertificateUrl(certificateUrl);
+			}
 
 			RequestWrapper<JWTSignatureRequestDto> request = new RequestWrapper<>();
 			request.setRequest(dto);
