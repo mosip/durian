@@ -72,7 +72,7 @@ public class DigitalSignatureUtil {
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 					LoggerFileConstant.POLICYID.toString(),
 					"DigitalSignatureUtil::jwtSign()::entry");
-			String hashData = HMACUtils2.digestAsPlainText(HMACUtils2.generateHash(file));
+			String hashData = HMACUtils2.digestAsPlainText(file);
 			String digestData = CryptoUtil.encodeBase64(hashData.getBytes());
 
 			JSONObject signatureJson = createSignatureJson(filname, partnerId, digestData, creationTime, expiryTime);
