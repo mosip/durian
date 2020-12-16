@@ -94,7 +94,7 @@ public class DigitalSignatureUtilTest {
 		PowerMockito.mockStatic(CryptoUtil.class);
 		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(data);
 		PowerMockito.mockStatic(HMACUtils2.class);
-		Mockito.when(HMACUtils2.generateHash(Mockito.any())).thenReturn(data.getBytes());
+
 		Mockito.when(HMACUtils2.digestAsPlainText(Mockito.any())).thenReturn(data);
 		Mockito.when(objectMapper.writeValueAsString(Mockito.any()))
 				.thenReturn(data);
