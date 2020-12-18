@@ -1,15 +1,11 @@
 package io.mosip.datashare.util;
 
 import java.io.IOException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +15,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.mosip.datashare.constant.ApiName;
@@ -32,14 +30,12 @@ import io.mosip.datashare.dto.UploadCertificateRequestDto;
 import io.mosip.datashare.exception.ApiNotAccessibleException;
 import io.mosip.datashare.exception.DataEncryptionFailureException;
 import io.mosip.datashare.logger.DataShareLogger;
-import io.mosip.kernel.core.crypto.spi.CryptoCoreSpec;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.RequestWrapper;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
-import io.mosip.kernel.keygenerator.bouncycastle.KeyGenerator;
 
 
 /**
@@ -63,14 +59,6 @@ public class EncryptionUtil {
 	@Autowired
 	private ObjectMapper mapper;
 
-	@Value("${mosip.kernel.data-key-splitter}")
-	private String KEY_SPLITTER;
-
-	@Autowired
-	private KeyGenerator keyGenerator;
-
-	@Autowired
-	private CryptoCoreSpec<byte[], byte[], SecretKey, PublicKey, PrivateKey, String> cryptoCore;
 
 	@Autowired
 	private RestUtil restUtil;
@@ -82,6 +70,7 @@ public class EncryptionUtil {
 	private static final String DATE_TIME_EXCEPTION = "Error while parsing packet timestamp";
 
 	private static final Logger LOGGER = DataShareLogger.getLogger(EncryptionUtil.class);
+
 
 	/**
 	 * Encrypt data.
@@ -97,13 +86,16 @@ public class EncryptionUtil {
 		String dataToBeEncrypted;
 		byte[] encryptedPacket = null;
 		try {
-			makeCertificateAvailable( partnerId);
+			checkCertificateAndUpload( partnerId);
+
 			dataToBeEncrypted = CryptoUtil.encodeBase64(filedata);
 			CryptomanagerRequestDto cryptomanagerRequestDto = new CryptomanagerRequestDto();
 			RequestWrapper<CryptomanagerRequestDto> request = new RequestWrapper<>();
 			cryptomanagerRequestDto.setApplicationId(applicationId);
 			cryptomanagerRequestDto.setData(dataToBeEncrypted);
 			cryptomanagerRequestDto.setReferenceId(partnerId);
+			cryptomanagerRequestDto.setPrependThumbprint(
+					env.getProperty("mosip.data.share.prependThumbprint", Boolean.class));
 			DateTimeFormatter format = DateTimeFormatter.ofPattern(env.getProperty(DATETIME_PATTERN));
 			LocalDateTime localdatetime = LocalDateTime
 					.parse(DateUtils.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN)), format);
@@ -156,7 +148,7 @@ public class EncryptionUtil {
     	
     }
 
-	private void makeCertificateAvailable(String partnerId) throws Exception {
+	private void checkCertificateAndUpload(String partnerId) throws Exception {
 
 		String getCertificateQueryParameterName="applicationId,referenceId";
 		String getCertificateQueryParameterValue=applicationId+","+partnerId;
@@ -179,41 +171,10 @@ public class EncryptionUtil {
 			for(ServiceError error:certificateResponseobj.getErrors()) {
 				if (error.getErrorCode().equals("KER-KMS-002") || error.getErrorCode().equals("KER-KMS-012")
 						|| error.getErrorCode().equals("KER-KMS-016") || error.getErrorCode().equals("KER-KMS-018")) {
+
+
 					count++;
-					Map<String, String> pathsegments = new HashMap<>();
-					pathsegments.put("partnerId", partnerId);
-
-					String partnerCertificateResponse = restUtil.getApi(ApiName.GET_PARTNER_CERTIFICATE,
-							pathsegments, String.class);
-
-					PartnerGetCertificateResponseDto partnerCertificateResponseObj=mapper.readValue(partnerCertificateResponse,
-							PartnerGetCertificateResponseDto.class);
-
-					if(partnerCertificateResponseObj!=null && partnerCertificateResponseObj.getResponse()!=null &&
-							partnerCertificateResponseObj.getResponse().getCertificateData() !=null&& !partnerCertificateResponseObj.getResponse().getCertificateData().isEmpty()) {
-
-						UploadCertificateRequestDto uploadCertificateRequestDto=new UploadCertificateRequestDto();
-						uploadCertificateRequestDto.setApplicationId(applicationId);
-						uploadCertificateRequestDto.setCertificateData(partnerCertificateResponseObj.getResponse().getCertificateData());
-						uploadCertificateRequestDto.setReferenceId(partnerId);
-						RequestWrapper<UploadCertificateRequestDto> uploadrequest=new RequestWrapper<UploadCertificateRequestDto>();
-						uploadrequest.setRequest(uploadCertificateRequestDto);
-
-						String uploadCertificateResponse=restUtil.postApi(ApiName.KEYMANAGER_UPLOAD_OTHER_DOMAIN_CERTIFICATE, null, "", "",
-								MediaType.APPLICATION_JSON, uploadrequest, String.class);
-
-						KeyManagerUploadCertificateResponseDto uploadCertificateResponseobj= mapper.readValue(uploadCertificateResponse,
-								KeyManagerUploadCertificateResponseDto.class);
-
-						if (uploadCertificateResponseobj != null && uploadCertificateResponseobj.getErrors() != null && !uploadCertificateResponseobj.getErrors().isEmpty()) {
-							ServiceError error1 = uploadCertificateResponseobj.getErrors().get(0);
-							throw new DataEncryptionFailureException(error1.getMessage());
-						}
-
-					}else if (partnerCertificateResponseObj != null && partnerCertificateResponseObj.getErrors() != null ) {
-						ServiceError error2 = partnerCertificateResponseObj.getErrors();
-						throw new DataEncryptionFailureException(error2.getMessage());
-					}
+					getPartnerCertificateAndUpload(partnerId);
 
 				}
 			}
@@ -223,6 +184,52 @@ public class EncryptionUtil {
 			}
 		}
 
+	}
+
+	private void getPartnerCertificateAndUpload(String partnerId)
+			throws Exception, IOException, JsonParseException, JsonMappingException {
+		Map<String, String> pathsegments = new HashMap<>();
+		pathsegments.put("partnerId", partnerId);
+
+		String partnerCertificateResponse = restUtil.getApi(ApiName.GET_PARTNER_CERTIFICATE,
+				pathsegments, String.class);
+
+		PartnerGetCertificateResponseDto partnerCertificateResponseObj=mapper.readValue(partnerCertificateResponse,
+				PartnerGetCertificateResponseDto.class);
+
+		if(partnerCertificateResponseObj!=null && partnerCertificateResponseObj.getResponse()!=null &&
+				partnerCertificateResponseObj.getResponse().getCertificateData() !=null&& !partnerCertificateResponseObj.getResponse().getCertificateData().isEmpty()) {
+
+			uploadPartnerCertificateToKeyManager(partnerId, partnerCertificateResponseObj);
+			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
+					partnerId, "uploaded partner Certificate to key manager");
+
+		}else if (partnerCertificateResponseObj != null && partnerCertificateResponseObj.getErrors() != null ) {
+			ServiceError error2 = partnerCertificateResponseObj.getErrors();
+			throw new DataEncryptionFailureException(error2.getMessage());
+		}
+	}
+
+	private void uploadPartnerCertificateToKeyManager(String partnerId,
+			PartnerGetCertificateResponseDto partnerCertificateResponseObj)
+			throws IOException, JsonParseException, JsonMappingException {
+		UploadCertificateRequestDto uploadCertificateRequestDto=new UploadCertificateRequestDto();
+		uploadCertificateRequestDto.setApplicationId(applicationId);
+		uploadCertificateRequestDto.setCertificateData(partnerCertificateResponseObj.getResponse().getCertificateData());
+		uploadCertificateRequestDto.setReferenceId(partnerId);
+		RequestWrapper<UploadCertificateRequestDto> uploadrequest=new RequestWrapper<UploadCertificateRequestDto>();
+		uploadrequest.setRequest(uploadCertificateRequestDto);
+
+		String uploadCertificateResponse=restUtil.postApi(ApiName.KEYMANAGER_UPLOAD_OTHER_DOMAIN_CERTIFICATE, null, "", "",
+				MediaType.APPLICATION_JSON, uploadrequest, String.class);
+
+		KeyManagerUploadCertificateResponseDto uploadCertificateResponseobj= mapper.readValue(uploadCertificateResponse,
+				KeyManagerUploadCertificateResponseDto.class);
+
+		if (uploadCertificateResponseobj != null && uploadCertificateResponseobj.getErrors() != null && !uploadCertificateResponseobj.getErrors().isEmpty()) {
+			ServiceError error1 = uploadCertificateResponseobj.getErrors().get(0);
+			throw new DataEncryptionFailureException(error1.getMessage());
+		}
 	}
 
 }

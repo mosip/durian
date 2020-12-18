@@ -3,6 +3,7 @@ package io.mosip.datashare.test.util;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,24 +13,30 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.springframework.core.env.Environment;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.mosip.datashare.dto.JWTSignatureResponseDto;
 import io.mosip.datashare.dto.SignResponseDto;
-import io.mosip.datashare.dto.SignatureResponse;
 import io.mosip.datashare.exception.SignatureException;
 import io.mosip.datashare.util.DigitalSignatureUtil;
 import io.mosip.datashare.util.RestUtil;
 import io.mosip.kernel.core.exception.ServiceError;
+import io.mosip.kernel.core.util.CryptoUtil;
+import io.mosip.kernel.core.util.HMACUtils2;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*", "org.w3c.dom.*",
 		"com.sun.org.apache.xalan.*" })
+@PrepareForTest(value = { CryptoUtil.class, HMACUtils2.class })
 public class DigitalSignatureUtilTest {
 
 	/** The environment. */
@@ -49,35 +56,48 @@ public class DigitalSignatureUtilTest {
 
 	private SignResponseDto signResponseDto;
 
-	String signResponse;
+	String jwtsignResponse;
+
+	String data = "testdata";
 
 
 	@SuppressWarnings("unchecked")
 	@Before
-	public void setUp() throws JsonParseException, JsonMappingException, IOException {
-
+	public void setUp() throws JsonParseException, JsonMappingException, IOException, NoSuchAlgorithmException {
+		ReflectionTestUtils.setField(digitalSignatureUtil, "digestAlg", "SHA256");
 		signResponseDto = new SignResponseDto();
-		SignatureResponse sign = new SignatureResponse();
-		sign.setSignature("testdata");
-		signResponseDto.setResponse(sign);
-		signResponse = "{\r\n" + 
+		JWTSignatureResponseDto jwtSign = new JWTSignatureResponseDto();
+		jwtSign.setJwtSignedData(data);
+		signResponseDto.setResponse(jwtSign);
+		jwtsignResponse = "{\r\n" +
     		"  \"id\": \"string\",\r\n" + 
     		"  \"version\": \"string\",\r\n" + 
     		"  \"responsetime\": \"2020-07-28T10:06:31.530Z\",\r\n" + 
     		"  \"metadata\": null,\r\n" + 
     		"  \"response\": {\r\n" + 
-				"    \"signature\": \"testdata\",\r\n" + 
+				"    \"jwtSignedData\": \"testdata\",\r\n" + 
     		"    \"timestamp\": \"2020-07-28T10:06:31.502Z\"\r\n" + 
     		"  },\r\n" + 
     		"  \"errors\": null\r\n" + 
 				"}";
 
 		Mockito.when(restUtil.postApi(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
-				Mockito.any(), Mockito.any())).thenReturn(signResponse);
+				Mockito.any(), Mockito.any())).thenReturn(jwtsignResponse);
 
-		Mockito.when(objectMapper.readValue(signResponse, SignResponseDto.class)).thenReturn(signResponseDto);
+		Mockito.when(objectMapper.readValue(jwtsignResponse, SignResponseDto.class)).thenReturn(signResponseDto);
 		Mockito.when(environment.getProperty("mosip.data.share.datetime.pattern"))
 				.thenReturn("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+		Mockito.when(environment.getProperty("mosip.data.share.includeCertificateHash"))
+				.thenReturn("false");
+		Mockito.when(environment.getProperty("mosip.data.share.includeCertificate")).thenReturn("false");
+		Mockito.when(environment.getProperty("mosip.data.share.includePayload")).thenReturn("false");
+		PowerMockito.mockStatic(CryptoUtil.class);
+		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(data);
+		PowerMockito.mockStatic(HMACUtils2.class);
+
+		Mockito.when(HMACUtils2.digestAsPlainText(Mockito.any())).thenReturn(data);
+		Mockito.when(objectMapper.writeValueAsString(Mockito.any()))
+				.thenReturn(data);
 	}
 
 	@Test
@@ -85,7 +105,7 @@ public class DigitalSignatureUtilTest {
 		String test = "testdata";
 		byte[] sample = test.getBytes();
 		
-		String signedData = digitalSignatureUtil.sign(sample);
+		String signedData = digitalSignatureUtil.jwtSign(sample, "test", "", "", "");
 		assertEquals(test, signedData);
 		
 
@@ -95,8 +115,8 @@ public class DigitalSignatureUtilTest {
 	public void testIOException() throws JsonParseException, JsonMappingException, IOException {
 		String test = "testdata";
 		byte[] sample = test.getBytes();
-		Mockito.when(objectMapper.readValue(signResponse, SignResponseDto.class)).thenThrow(new IOException());
-		digitalSignatureUtil.sign(sample);
+		Mockito.when(objectMapper.readValue(jwtsignResponse, SignResponseDto.class)).thenThrow(new IOException());
+		String signedData = digitalSignatureUtil.jwtSign(sample, "test", "", "", "");
 	}
 
 
@@ -113,6 +133,6 @@ public class DigitalSignatureUtilTest {
 		String test = "testdata";
 		byte[] sample = test.getBytes();
 
-		digitalSignatureUtil.sign(sample);
+		String signedData = digitalSignatureUtil.jwtSign(sample, "test", "", "", "");
 	}
 }
