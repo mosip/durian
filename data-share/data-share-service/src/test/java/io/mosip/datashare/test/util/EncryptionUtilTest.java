@@ -29,7 +29,6 @@ import io.mosip.datashare.dto.CryptomanagerResponseDto;
 import io.mosip.datashare.dto.EncryptResponseDto;
 import io.mosip.datashare.dto.KeyManagerGetCertificateResponseDto;
 import io.mosip.datashare.dto.KeyManagerUploadCertificateResponseDto;
-import io.mosip.datashare.dto.KeyPairGenerateResponseDto;
 import io.mosip.datashare.dto.PartnerCertDownloadResponeDto;
 import io.mosip.datashare.dto.PartnerGetCertificateResponseDto;
 import io.mosip.datashare.dto.UploadCertificateResponseDto;
@@ -126,72 +125,8 @@ public class EncryptionUtilTest {
 
 	}
 	
-	@Test
-	public void encryptionSuccessCertificateAvailableTest() throws IOException {
-		KeyPairGenerateResponseDto keyPairGenerateResponseDto=new KeyPairGenerateResponseDto();
-		keyPairGenerateResponseDto.setCertificate("testdata");
-		certificateResponseobj.setResponse(keyPairGenerateResponseDto);
-		Mockito.when(objectMapper.readValue(response, KeyManagerGetCertificateResponseDto.class))
-		.thenReturn(certificateResponseobj);
-
-		PowerMockito.mockStatic(CryptoUtil.class);
-		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(test);
-		byte[] encryptedData = encryptionUtil.encryptData(sample, "112");
-		String resultData = IOUtils.toString(encryptedData);
-		assertEquals(test, resultData);
-
-	}
-	
-	@Test(expected = DataEncryptionFailureException.class)
-	public void encryptionFailureGetCertificateTest() throws IOException {
-		ServiceError error = new ServiceError("","");
-		List<ServiceError> errors=new ArrayList<>();
-		errors.add(error);
-		certificateResponseobj.setErrors(errors);
-		Mockito.when(objectMapper.readValue(response, KeyManagerGetCertificateResponseDto.class))
-		.thenReturn(certificateResponseobj);
-
-		PowerMockito.mockStatic(CryptoUtil.class);
-		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(test);
-		byte[] encryptedData = encryptionUtil.encryptData(sample, "112");
-		String resultData = IOUtils.toString(encryptedData);
-		assertEquals(test, resultData);
-
-	}
-	
-	@Test(expected = DataEncryptionFailureException.class)
-	public void encryptionFailurePartnerCertificateTest() throws IOException {
-		ServiceError error = new ServiceError("","");
-		partnerCertificateResponseObj.setErrors(error);
-		partnerCertificateResponseObj.setResponse(null);
-		Mockito.when(objectMapper.readValue(response, PartnerGetCertificateResponseDto.class))
-		.thenReturn(partnerCertificateResponseObj);
-		PowerMockito.mockStatic(CryptoUtil.class);
-		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(test);
-		byte[] encryptedData = encryptionUtil.encryptData(sample, "112");
-		
-
-	}
 	
 	
-	
-	@Test(expected = DataEncryptionFailureException.class)
-	public void encryptionFailureCertificateUploadErrorTest() throws IOException {
-		ServiceError error = new ServiceError("","");
-		List<ServiceError> errors=new ArrayList<>();
-		errors.add(error);
-		uploadCertificateResponseobj.setErrors(errors);
-		uploadCertificateResponseobj.setResponse(null);
-		Mockito.when(objectMapper.readValue(response, KeyManagerUploadCertificateResponseDto.class))
-		.thenReturn(uploadCertificateResponseobj);
-		PowerMockito.mockStatic(CryptoUtil.class);
-		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(test);
-		byte[] encryptedData = encryptionUtil.encryptData(sample, "112");
-		String resultData = IOUtils.toString(encryptedData);
-		assertEquals(test, resultData);
-
-	}
-
 	@Test(expected = DataEncryptionFailureException.class)
 	public void testIOException() throws JsonParseException, JsonMappingException, IOException {
 		String test = "testdata";
