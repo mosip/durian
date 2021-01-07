@@ -216,7 +216,7 @@ public class DataShareServiceImpl implements DataShareService {
 				if (env.getProperty(KEY_LENGTH) != null) {
 					length = Integer.parseInt(env.getProperty(KEY_LENGTH));
 				}
-				// TODO key should be unique
+
 				String shortRandomShareKey = RandomStringUtils.randomAlphanumeric(length);
 				cacheUtil.getShortUrlData(shortRandomShareKey, policyId, subscriberId, randomShareKey);
 				dataShareUrl = new URL(protocol, shareDomain,
@@ -295,9 +295,8 @@ public class DataShareServiceImpl implements DataShareService {
 			int transactionAllowed = Integer.parseInt((String) metaDataMap.get(TRANSACTIONSALLOWED));
 			if(transactionAllowed >= 1) {
 				isDataShareAllow=true;
-				// objectStoreAdapter.decMetadata(subcriberId, policyId, null, null,
-				// randomShareKey,
-				// "transactionsallowed");
+				objectStoreAdapter.decMetadata(subcriberId, policyId, null, null, randomShareKey,
+						"transactionsallowed");
 
 			}
 
@@ -349,7 +348,7 @@ public class DataShareServiceImpl implements DataShareService {
 		if (env.getProperty(KEY_LENGTH) != null) {
 			length = Integer.parseInt(env.getProperty(KEY_LENGTH));
 		}
-		// TODO key should be unique
+
 		String randomShareKey=subscriberId+policyId+DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())+RandomStringUtils.randomAlphanumeric(length);
 		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, null, null, randomShareKey,
 				filedata);
