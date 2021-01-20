@@ -124,9 +124,7 @@ public class EncryptionUtilTest {
 		assertEquals(test, resultData);
 
 	}
-	
-	
-	
+
 	@Test(expected = DataEncryptionFailureException.class)
 	public void testIOException() throws JsonParseException, JsonMappingException, IOException {
 		String test = "testdata";
