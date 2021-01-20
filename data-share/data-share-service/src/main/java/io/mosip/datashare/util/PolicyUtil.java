@@ -49,8 +49,8 @@ public class PolicyUtil {
 	public PolicyResponseDto getPolicyDetail(String policyId, String subscriberId) {
 
 		try {
-			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
-					LoggerFileConstant.SUBSCRIBERID.toString(), "PolicyUtil::getPolicyDetail()::entry");
+			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+					policyId, "PolicyUtil::getPolicyDetail()::entry");
 			Map<String, String> pathsegments = new HashMap<>();
 			pathsegments.put("partnerId", subscriberId);
 			pathsegments.put("policyId", policyId);
@@ -63,20 +63,20 @@ public class PolicyUtil {
 				throw new PolicyException(error.getMessage());
 			}
 			PolicyResponseDto policyResponseDto = responseObject.getResponse();
-			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
-					subscriberId,
+			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+					policyId,
 					"Fetched policy details successfully");
-			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
-					LoggerFileConstant.SUBSCRIBERID.toString(), "PolicyUtil::getPolicyDetail()::exit");
+			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+					"PolicyUtil::getPolicyDetail()::exit");
 			return policyResponseDto;
 		} catch (IOException e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-					LoggerFileConstant.POLICYID.toString(),
+					policyId,
 					"PolicyUtil::getPolicyDetail():: error with error message" + ExceptionUtils.getStackTrace(e));
 			throw new PolicyException(e);
 		} catch (Exception e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-					LoggerFileConstant.POLICYID.toString(),
+					policyId,
 					"PolicyUtil::getPolicyDetail():: error with error message" + ExceptionUtils.getStackTrace(e));
 			if (e.getCause() instanceof HttpClientErrorException) {
 				HttpClientErrorException httpClientException = (HttpClientErrorException) e.getCause();

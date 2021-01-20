@@ -69,8 +69,7 @@ public class DigitalSignatureUtil {
 	 */
 	public String jwtSign(byte[] file, String filname, String partnerId, String creationTime, String expiryTime) {
 		try {
-			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-					LoggerFileConstant.POLICYID.toString(),
+			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"DigitalSignatureUtil::jwtSign()::entry");
 			String hashData = HMACUtils2.digestAsPlainText(file);
 			String digestData = CryptoUtil.encodeBase64(hashData.getBytes());
@@ -107,18 +106,16 @@ public class DigitalSignatureUtil {
 			}
 			String signedData = responseObject.getResponse().getJwtSignedData();
 
-			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-					LoggerFileConstant.POLICYID.toString(), "DigitalSignatureUtil::jwtSign()::exit");
+			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
+					"DigitalSignatureUtil::jwtSign()::exit");
 			return signedData;
 
 		} catch (IOException e) {
-			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-					LoggerFileConstant.POLICYID.toString(),
+			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"DigitalSignatureUtil::jwtSign():: error with error message" + ExceptionUtils.getStackTrace(e));
 			throw new SignatureException(e);
 		} catch (Exception e) {
-			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-					LoggerFileConstant.POLICYID.toString(),
+			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"DigitalSignatureUtil::jwtSign():: error with error message" + ExceptionUtils.getStackTrace(e));
 			if (e.getCause() instanceof HttpClientErrorException) {
 				HttpClientErrorException httpClientException = (HttpClientErrorException) e.getCause();
