@@ -79,6 +79,7 @@ public class EncryptionUtil {
 		byte[] encryptedPacket = null;
 		try {
 
+
 			dataToBeEncrypted = CryptoUtil.encodeBase64(filedata);
 			CryptomanagerRequestDto cryptomanagerRequestDto = new CryptomanagerRequestDto();
 			RequestWrapper<CryptomanagerRequestDto> request = new RequestWrapper<>();
@@ -138,9 +139,6 @@ public class EncryptionUtil {
 		return encryptedPacket;
     	
     }
-
-
-
 
 
 }
