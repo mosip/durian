@@ -180,14 +180,13 @@ public class DataShareServiceImpl implements DataShareService {
 						"DataShareServiceImpl::createDataShare()::exit");
 			} catch (IOException e) {
 				LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-						LoggerFileConstant.POLICYID.toString(),
-						IO_EXCEPTION + ExceptionUtils.getStackTrace(e));
+						policyId, IO_EXCEPTION + ExceptionUtils.getStackTrace(e));
 				throw new FileException(IO_EXCEPTION, e);
 			}
 
 		}else {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-					LoggerFileConstant.POLICYID.toString(), DataUtilityErrorCodes.FILE_EXCEPTION.getErrorMessage());
+					policyId, DataUtilityErrorCodes.FILE_EXCEPTION.getErrorMessage());
 			throw new FileException();
 		}
 
@@ -231,7 +230,7 @@ public class DataShareServiceImpl implements DataShareService {
 
 		} catch (MalformedURLException e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-					LoggerFileConstant.POLICYID.toString(),
+					policyId,
 					DataUtilityErrorCodes.URL_CREATION_EXCEPTION.getErrorMessage() + ExceptionUtils.getStackTrace(e));
 			new URLCreationException(e);
 		}
@@ -251,7 +250,8 @@ public class DataShareServiceImpl implements DataShareService {
 	public DataShareGetResponse getDataFile(String policyId, String subcriberId, String randomShareKey) {
 		DataShareGetResponse dataShareGetResponse = new DataShareGetResponse();
 		byte[] dataBytes = null;
-
+		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+				"DataShareServiceImpl::getDataFile()::entry");
 		try {
 			boolean isDataShareAllow = getAndUpdateMetaData(randomShareKey, policyId, subcriberId,
 					dataShareGetResponse);
@@ -261,13 +261,21 @@ public class DataShareServiceImpl implements DataShareService {
 				if (inputStream != null) {
 					dataBytes = IOUtils.toByteArray(inputStream);
 					dataShareGetResponse.setFileBytes(dataBytes);
+					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+							policyId, "Successfully get the object from object store");
 				} else {
+					LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+							policyId, "Failed to get object from object store");
 					throw new DataShareNotFoundException();
 				}
 			} else {
 				throw new DataShareExpiredException();
 			}
+			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+					"DataShareServiceImpl::getDataFile()::exit");
 		} catch (IOException e) {
+			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+					IO_EXCEPTION + ExceptionUtils.getStackTrace(e));
 			throw new FileException(IO_EXCEPTION, e);
 		}
 
@@ -285,10 +293,13 @@ public class DataShareServiceImpl implements DataShareService {
 	private boolean getAndUpdateMetaData(String randomShareKey, String policyId, String subcriberId,
 			DataShareGetResponse dataShareGetResponse) {
 		boolean isDataShareAllow = false;
-
+		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+				"DataShareServiceImpl::getAndUpdateMetaData()::entry");
 		Map<String, Object> metaDataMap = objectStoreAdapter.getMetaData(subcriberId, policyId, null, null,
 				randomShareKey);
 		if (metaDataMap == null || metaDataMap.isEmpty()) {
+			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+					"metadata is empty");
 			throw new DataShareNotFoundException();
 		}else {
 			dataShareGetResponse.setSignature((String) metaDataMap.get(SIGNATURE));
@@ -297,11 +308,13 @@ public class DataShareServiceImpl implements DataShareService {
 				isDataShareAllow=true;
 				objectStoreAdapter.decMetadata(subcriberId, policyId, null, null, randomShareKey,
 						"transactionsallowed");
-
+				LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+						"Successfully update the metadata");
 			}
 
 		}
-
+		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+				"DataShareServiceImpl::getAndUpdateMetaData()::exit");
 		return isDataShareAllow;
 	}
 
@@ -368,6 +381,8 @@ public class DataShareServiceImpl implements DataShareService {
 	 */
 	@Override
 	public DataShareGetResponse getDataFile(String shortUrlKey) {
+		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.KEY.toString(), shortUrlKey,
+				"DataShareServiceImpl::getDataFile()");
 		String data = cacheUtil.getShortUrlData(shortUrlKey, null, null, null);
 		
 		if (data != null && !data.isEmpty()) {

@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
 import io.mosip.datashare.controller.DataShareController;
 import io.mosip.datashare.dto.DataShareResponseDto;
 import io.mosip.datashare.dto.ErrorDTO;
@@ -80,6 +81,10 @@ public class DataShareExceptionHandler {
 		return buildDataShareApiExceptionResponse((Exception) e);
 	}
 
+	@ExceptionHandler(ObjectStoreAdapterException.class)
+	public ResponseEntity<DataShareResponseDto> objectStoreAdapterException(ObjectStoreAdapterException e) {
+		return buildDataShareApiExceptionResponse((Exception) e);
+	}
 	private ResponseEntity<DataShareResponseDto> buildDataShareApiExceptionResponse(Exception ex) {
 		DataShareResponseDto response = new DataShareResponseDto();
 		Throwable e = ex;
