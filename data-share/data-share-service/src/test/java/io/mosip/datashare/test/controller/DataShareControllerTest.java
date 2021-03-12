@@ -35,13 +35,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import io.mosip.datashare.controller.DataShareController;
 import io.mosip.datashare.dto.DataShare;
+import io.mosip.datashare.dto.DataShareGetResponse;
 import io.mosip.datashare.service.DataShareService;
 import io.mosip.datashare.test.TestBootApplication;
 import io.mosip.datashare.test.config.TestConfig;
 
-/*@RunWith(SpringRunner.class)
-@SpringBootTest
-@AutoConfigureMockMvc*/
+
 @ContextConfiguration(classes = TestConfig.class)
 @TestPropertySource(locations = "classpath:application.properties")
 @RunWith(PowerMockRunner.class)
@@ -107,9 +106,11 @@ public class DataShareControllerTest {
 	@WithUserDetails("test")
 	public void testGetDataShareSuccess() throws Exception {
 		String sample = "Test";
-
+		DataShareGetResponse response = new DataShareGetResponse();
+		response.setFileBytes(sample.getBytes());
+		response.setSignature("signature");
 		Mockito.when(dataShareService.getDataFile(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())
-				).thenReturn(sample.getBytes());
+		).thenReturn(response);
 		
 		
 		
@@ -123,9 +124,11 @@ public class DataShareControllerTest {
 	@WithUserDetails("test")
 	public void testGetDataShareWithShorKeySuccess() throws Exception {
 		String sample = "Test";
-
+		DataShareGetResponse response = new DataShareGetResponse();
+		response.setFileBytes(sample.getBytes());
+		response.setSignature("signature");
 		Mockito.when(dataShareService.getDataFile(Mockito.anyString()))
-				.thenReturn(sample.getBytes());
+				.thenReturn(response);
 
 		mockMvc.perform(MockMvcRequestBuilders.get("/datashare/randomsharekey")
 				.contentType(MediaType.ALL_VALUE).content(sample.getBytes())).andExpect(status().isOk());

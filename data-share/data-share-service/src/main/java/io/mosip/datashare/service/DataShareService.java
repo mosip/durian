@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import io.mosip.datashare.dto.DataShare;
+import io.mosip.datashare.dto.DataShareGetResponse;
 
 
 /**
@@ -28,9 +29,9 @@ public interface DataShareService {
 	 * @param randomShareKey the random share key
 	 * @return the data file
 	 */
-	public byte[] getDataFile(String policyId, String subscriberId, String randomShareKey);
+	public DataShareGetResponse getDataFile(String policyId, String subscriberId, String randomShareKey);
 
-	public byte[] getDataFile(String randomShareKey);
+	public DataShareGetResponse getDataFile(String randomShareKey);
 
 
 
