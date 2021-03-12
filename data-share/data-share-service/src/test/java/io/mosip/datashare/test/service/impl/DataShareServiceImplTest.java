@@ -110,10 +110,12 @@ public class DataShareServiceImplTest {
 
 		policyResponseDto = new PolicyResponseDto();
 		DataShareDto dataSharePolicies = new DataShareDto();
-		dataSharePolicies.setEncryptionType("partnerBased");
+		dataSharePolicies.setEncryptionType("Partner Based");
 		dataSharePolicies.setShareDomain("dev.mosip.net");
 		dataSharePolicies.setTransactionsAllowed("2");
 		dataSharePolicies.setValidForInMinutes("60");
+		dataSharePolicies.setSource("");
+		dataSharePolicies.setTypeOfShare("");
 		policyAttributesDto = new PolicyAttributesDto();
 		policyAttributesDto.setDataSharePolicies(dataSharePolicies);
 		policyResponseDto.setPolicies(policyAttributesDto);
