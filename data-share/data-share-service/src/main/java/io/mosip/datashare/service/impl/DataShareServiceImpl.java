@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,6 +24,7 @@ import io.mosip.datashare.constant.DataUtilityErrorCodes;
 import io.mosip.datashare.constant.LoggerFileConstant;
 import io.mosip.datashare.dto.DataShare;
 import io.mosip.datashare.dto.DataShareDto;
+import io.mosip.datashare.dto.DataShareGetResponse;
 import io.mosip.datashare.dto.PolicyResponseDto;
 import io.mosip.datashare.exception.DataShareExpiredException;
 import io.mosip.datashare.exception.DataShareNotFoundException;
@@ -35,6 +38,7 @@ import io.mosip.datashare.util.EncryptionUtil;
 import io.mosip.datashare.util.PolicyUtil;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
+import io.mosip.kernel.core.util.DateUtils;
 
 
 
@@ -102,14 +106,20 @@ public class DataShareServiceImpl implements DataShareService {
 	@Value("${mosip.data.share.urlshortner}")
 	private boolean isShortUrl;
 
-	public static final String PARTNERBASED = "partnerBased";
+	public static final String PARTNERBASED = "Partner Based";
 
 	public static final String NONE = "none";
 
 	public static final String TRANSACTIONSALLOWED = "transactionsallowed";
 
+	public static final String SIGNATURE = "signature";
+
 	@Value("${mosip.data.share.protocol}")
 	private String httpProtocol;
+
+
+	/** The Constant DATETIME_PATTERN. */
+	private static final String DATETIME_PATTERN = "mosip.data.share.datetime.pattern";
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -128,7 +138,7 @@ public class DataShareServiceImpl implements DataShareService {
 				byte[] fileData = file.getBytes();
 				PolicyResponseDto policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
 
-				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, policyDetailResponse);
+
 				DataShareDto dataSharePolicies = policyDetailResponse.getPolicies().getDataSharePolicies();
 				byte[] encryptedData = null;
 				if (PARTNERBASED.equalsIgnoreCase(dataSharePolicies.getEncryptionType())) {
@@ -143,11 +153,22 @@ public class DataShareServiceImpl implements DataShareService {
 							policyId, subscriberId + "Without encryption" + dataSharePolicies.getEncryptionType());
 
 				}
+				
+				String createShareTime = DateUtils
+						.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN));
+				String expiryTime = DateUtils
+						.toISOString(DateUtils.addMinutes(DateUtils.parseUTCToDate(createShareTime),
+								Integer.parseInt(dataSharePolicies.getValidForInMinutes())));
+
+				String jwtSignature = digitalSignatureUtil.jwtSign(fileData, file.getName(), subscriberId,
+						createShareTime, expiryTime);
+				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, policyDetailResponse,
+						jwtSignature);
 				randomShareKey = storefile(aclMap, new ByteArrayInputStream(encryptedData), policyId, subscriberId);
 				String dataShareUrl = constructURL(randomShareKey, dataSharePolicies.getShareDomain(), policyId,
 						subscriberId);
 
-				dataShare.setSignature(digitalSignatureUtil.sign(fileData));
+
 				dataShare.setUrl(dataShareUrl);
 				dataShare.setPolicyId(policyId);
 				dataShare.setSubscriberId(subscriberId);
@@ -227,17 +248,19 @@ public class DataShareServiceImpl implements DataShareService {
 	 * io.mosip.datashare.service.DataShareService#getDataFile(java.lang.String)
 	 */
 	@Override
-	public byte[] getDataFile(String policyId, String subcriberId, String randomShareKey) {
-
+	public DataShareGetResponse getDataFile(String policyId, String subcriberId, String randomShareKey) {
+		DataShareGetResponse dataShareGetResponse = new DataShareGetResponse();
 		byte[] dataBytes = null;
 
 		try {
-			boolean isDataShareAllow = getAndUpdateMetaData(randomShareKey, policyId, subcriberId);
+			boolean isDataShareAllow = getAndUpdateMetaData(randomShareKey, policyId, subcriberId,
+					dataShareGetResponse);
 			if (isDataShareAllow) {
 				InputStream inputStream = objectStoreAdapter.getObject(subcriberId, policyId, null, null,
 						randomShareKey);
 				if (inputStream != null) {
 					dataBytes = IOUtils.toByteArray(inputStream);
+					dataShareGetResponse.setFileBytes(dataBytes);
 				} else {
 					throw new DataShareNotFoundException();
 				}
@@ -248,7 +271,7 @@ public class DataShareServiceImpl implements DataShareService {
 			throw new FileException(IO_EXCEPTION, e);
 		}
 
-		return dataBytes;
+		return dataShareGetResponse;
 	}
 
 	/**
@@ -259,7 +282,8 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @param subcriberId    the subcriber id
 	 * @return the and update meta data
 	 */
-	private boolean getAndUpdateMetaData(String randomShareKey, String policyId, String subcriberId) {
+	private boolean getAndUpdateMetaData(String randomShareKey, String policyId, String subcriberId,
+			DataShareGetResponse dataShareGetResponse) {
 		boolean isDataShareAllow = false;
 
 		Map<String, Object> metaDataMap = objectStoreAdapter.getMetaData(subcriberId, policyId, null, null,
@@ -267,12 +291,12 @@ public class DataShareServiceImpl implements DataShareService {
 		if (metaDataMap == null || metaDataMap.isEmpty()) {
 			throw new DataShareNotFoundException();
 		}else {
-
+			dataShareGetResponse.setSignature((String) metaDataMap.get(SIGNATURE));
 			int transactionAllowed = Integer.parseInt((String) metaDataMap.get(TRANSACTIONSALLOWED));
 			if(transactionAllowed >= 1) {
 				isDataShareAllow=true;
 				objectStoreAdapter.decMetadata(subcriberId, policyId, null, null, randomShareKey,
-						"transactionsAllowed");
+						"transactionsallowed");
 
 			}
 
@@ -291,7 +315,7 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @return the map
 	 */
 	private Map<String, Object> prepareMetaData(String subscriberId, String policyId,
-			PolicyResponseDto policyResponseDto) {
+			PolicyResponseDto policyResponseDto, String jwtSignature) {
 
 		DataShareDto dataSharePolicies = policyResponseDto.getPolicies().getDataSharePolicies();
 		Map<String, Object> aclMap = new HashMap<>();
@@ -301,6 +325,7 @@ public class DataShareServiceImpl implements DataShareService {
 		aclMap.put("subscriberId", subscriberId);
 		aclMap.put("validforinminutes", dataSharePolicies.getValidForInMinutes());
 		aclMap.put("transactionsallowed", dataSharePolicies.getTransactionsAllowed());
+		aclMap.put("signature", jwtSignature);
 
 
 		return aclMap;
@@ -324,8 +349,7 @@ public class DataShareServiceImpl implements DataShareService {
 			length = Integer.parseInt(env.getProperty(KEY_LENGTH));
 		}
 		// TODO key should be unique
-		String randomShareKey = RandomStringUtils.randomAlphanumeric(length);
-
+		String randomShareKey=subscriberId+policyId+DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())+RandomStringUtils.randomAlphanumeric(length);
 		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, null, null, randomShareKey,
 				filedata);
 		objectStoreAdapter.addObjectMetaData(subscriberId, policyId, null, null, randomShareKey, metaDataMap);
@@ -343,7 +367,7 @@ public class DataShareServiceImpl implements DataShareService {
 	 * io.mosip.datashare.service.DataShareService#getDataFile(java.lang.String)
 	 */
 	@Override
-	public byte[] getDataFile(String shortUrlKey) {
+	public DataShareGetResponse getDataFile(String shortUrlKey) {
 		String data = cacheUtil.getShortUrlData(shortUrlKey, null, null, null);
 		
 		if (data != null && !data.isEmpty()) {

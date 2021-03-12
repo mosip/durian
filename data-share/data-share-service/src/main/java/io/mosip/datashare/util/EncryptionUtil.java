@@ -1,13 +1,9 @@
 package io.mosip.datashare.util;
 
 import java.io.IOException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-
-import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,14 +22,12 @@ import io.mosip.datashare.dto.CryptomanagerResponseDto;
 import io.mosip.datashare.exception.ApiNotAccessibleException;
 import io.mosip.datashare.exception.DataEncryptionFailureException;
 import io.mosip.datashare.logger.DataShareLogger;
-import io.mosip.kernel.core.crypto.spi.CryptoCoreSpec;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.RequestWrapper;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
-import io.mosip.kernel.keygenerator.bouncycastle.KeyGenerator;
 
 
 /**
@@ -43,7 +37,7 @@ import io.mosip.kernel.keygenerator.bouncycastle.KeyGenerator;
 public class EncryptionUtil {
 
 	/** The application id. */
-	@Value("${data.share.application.id}")
+	@Value("${data.share.application.id:PARTNER}")
 	private String applicationId;
 
 	/** The Constant DATETIME_PATTERN. */
@@ -57,14 +51,6 @@ public class EncryptionUtil {
 	@Autowired
 	private ObjectMapper mapper;
 
-	@Value("${mosip.kernel.data-key-splitter}")
-	private String KEY_SPLITTER;
-
-	@Autowired
-	private KeyGenerator keyGenerator;
-
-	@Autowired
-	private CryptoCoreSpec<byte[], byte[], SecretKey, PublicKey, PrivateKey, String> cryptoCore;
 
 	@Autowired
 	private RestUtil restUtil;
@@ -77,6 +63,7 @@ public class EncryptionUtil {
 
 	private static final Logger LOGGER = DataShareLogger.getLogger(EncryptionUtil.class);
 
+
 	/**
 	 * Encrypt data.
 	 *
@@ -84,19 +71,23 @@ public class EncryptionUtil {
 	 * @param refId    the ref id
 	 * @return the byte[]
 	 */
-	public byte[] encryptData(byte[] filedata, String refId) {
+	public byte[] encryptData(byte[] filedata, String partnerId) {
 		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
 				LoggerFileConstant.SUBSCRIBERID.toString(), "EncryptionUtil::encryptData()::entry");
-		// TODO use input stream
+
 		String dataToBeEncrypted;
 		byte[] encryptedPacket = null;
 		try {
+
+
 			dataToBeEncrypted = CryptoUtil.encodeBase64(filedata);
 			CryptomanagerRequestDto cryptomanagerRequestDto = new CryptomanagerRequestDto();
 			RequestWrapper<CryptomanagerRequestDto> request = new RequestWrapper<>();
 			cryptomanagerRequestDto.setApplicationId(applicationId);
 			cryptomanagerRequestDto.setData(dataToBeEncrypted);
-			cryptomanagerRequestDto.setReferenceId(refId);
+			cryptomanagerRequestDto.setReferenceId(partnerId);
+			cryptomanagerRequestDto.setPrependThumbprint(
+					env.getProperty("mosip.data.share.prependThumbprint", Boolean.class));
 			DateTimeFormatter format = DateTimeFormatter.ofPattern(env.getProperty(DATETIME_PATTERN));
 			LocalDateTime localdatetime = LocalDateTime
 					.parse(DateUtils.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN)), format);
@@ -115,7 +106,7 @@ public class EncryptionUtil {
 				throw new DataEncryptionFailureException(error.getMessage());
 			}
 			encryptedPacket = responseObject.getResponse().getData().getBytes();
-			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(), refId,
+			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(), partnerId,
 					"Encryption done successfully");
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
 					LoggerFileConstant.SUBSCRIBERID.toString(), "EncryptionUtil::encryptData()::exit");
@@ -139,8 +130,9 @@ public class EncryptionUtil {
 			} else if (e.getCause() instanceof HttpServerErrorException) {
 				HttpServerErrorException httpServerException = (HttpServerErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpServerException.getResponseBodyAsString());
-			} else {
-				throw new DataEncryptionFailureException(e);
+			}
+			 else {
+				throw new DataEncryptionFailureException(e.getMessage());
 			}
 
 		}

@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import io.mosip.datashare.dto.DataShare;
+import io.mosip.datashare.dto.DataShareGetResponse;
 import io.mosip.datashare.dto.DataShareResponseDto;
 import io.mosip.datashare.service.DataShareService;
 import io.mosip.kernel.core.util.DateUtils;
@@ -92,11 +95,13 @@ public class DataShareController {
 	@ResponseBody
 	public ResponseEntity<byte[]> getFile(@PathVariable("policyId") String policyId,
 			@PathVariable("subscriberId") String subscriberId, @PathVariable("randomShareKey") String randomShareKey) {
-		// TODO need to validate JWT token with aud or azp which is client name or
-		// subcriber id
 
-		byte[] fileBytes = dataShareService.getDataFile(policyId, subscriberId, randomShareKey);
-		return ResponseEntity.status(HttpStatus.OK).body(fileBytes);
+		DataShareGetResponse dataShareGetResponse = dataShareService.getDataFile(policyId, subscriberId,
+				randomShareKey);
+		MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
+		headers.add("Signature", dataShareGetResponse.getSignature());
+
+		return new ResponseEntity<byte[]>(dataShareGetResponse.getFileBytes(), headers, HttpStatus.OK);
 
 	}
 
@@ -114,11 +119,14 @@ public class DataShareController {
 			@ApiResponse(code = 500, message = "Internal Server Error") })
 	@ResponseBody
 	public ResponseEntity<byte[]> getFile(@PathVariable("shortUrlKey") String shortUrlKey) {
-		// TODO need to validate JWT token with aud or azp which is client name or
-		// subcriber id
 
-		byte[] fileBytes = dataShareService.getDataFile(shortUrlKey);
-		return ResponseEntity.status(HttpStatus.OK).body(fileBytes);
+
+		DataShareGetResponse dataShareGetResponse = dataShareService.getDataFile(shortUrlKey);
+		  MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
+		  headers.add("Signature", dataShareGetResponse.getSignature());
+
+		return new ResponseEntity<byte[]>(dataShareGetResponse.getFileBytes(), headers,
+				HttpStatus.OK);
 
 	}
 }

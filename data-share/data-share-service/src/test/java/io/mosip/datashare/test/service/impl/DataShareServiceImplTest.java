@@ -96,6 +96,8 @@ public class DataShareServiceImplTest {
 		ReflectionTestUtils.setField(dataShareServiceImpl, "servletPath", "/");
 		ReflectionTestUtils.setField(dataShareServiceImpl, "isShortUrl", false);
 		ReflectionTestUtils.setField(dataShareServiceImpl, "httpProtocol", "https");
+		Mockito.when(env.getProperty("mosip.data.share.datetime.pattern"))
+				.thenReturn("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		PowerMockito.mockStatic(RandomStringUtils.class);
 		Mockito.when(RandomStringUtils.randomAlphanumeric(Mockito.anyInt())).thenReturn("dfg3456f");
 		metaDataMap = new HashMap<String, Object>();
@@ -110,10 +112,12 @@ public class DataShareServiceImplTest {
 
 		policyResponseDto = new PolicyResponseDto();
 		DataShareDto dataSharePolicies = new DataShareDto();
-		dataSharePolicies.setEncryptionType("partnerBased");
+		dataSharePolicies.setEncryptionType("Partner Based");
 		dataSharePolicies.setShareDomain("dev.mosip.net");
 		dataSharePolicies.setTransactionsAllowed("2");
 		dataSharePolicies.setValidForInMinutes("60");
+		dataSharePolicies.setSource("");
+		dataSharePolicies.setTypeOfShare("");
 		policyAttributesDto = new PolicyAttributesDto();
 		policyAttributesDto.setDataSharePolicies(dataSharePolicies);
 		policyResponseDto.setPolicies(policyAttributesDto);
@@ -122,7 +126,9 @@ public class DataShareServiceImplTest {
 		Mockito.when(encryptionUtil.encryptData(Mockito.any(), Mockito.anyString()))
 				.thenReturn(dataBytes);
 		
-		Mockito.when(digitalSignatureUtil.sign(dataBytes))
+		Mockito.when(digitalSignatureUtil.jwtSign(Mockito.any(), Mockito.anyString(), Mockito.anyString(),
+				Mockito.anyString(),
+				Mockito.anyString()))
 		.thenReturn(dataBytes.toString());
 		Mockito.when(objectStoreAdapter.putObject(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
 				Mockito.any(), Mockito.anyString(),

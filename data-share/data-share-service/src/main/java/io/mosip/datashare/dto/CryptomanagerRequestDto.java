@@ -58,6 +58,7 @@ public class CryptomanagerRequestDto {
 	@NotBlank(message = CryptomanagerConstant.INVALID_REQUEST)
 	private String data;
 	
-
+	@ApiModelProperty(notes = "flag to prepend certificate thumbprint to encrypted data.", example = "false", required = false)
+	private Boolean prependThumbprint;
 	
 }

@@ -30,8 +30,6 @@ public class DataShare {
 	
 	/** The subscriber id. */
 	private String subscriberId;
-	
-	/** The signature. */
-	private String signature;
+
 
 }
