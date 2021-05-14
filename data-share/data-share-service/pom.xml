@@ -5,11 +5,11 @@
   <parent>
     <groupId>io.mosip.datashare</groupId>
     <artifactId>data-share</artifactId>
-    <version>1.1.5</version>
+    <version>1.1.5.2</version>
   </parent>
 
   <artifactId>data-share-service</artifactId>
-  <version>1.1.5</version>
+  <version>1.1.5.2</version>
   <name>data-share-service</name>
 
   <properties>
@@ -124,7 +124,7 @@
 		<dependency>
 		    <groupId>javax.xml.bind</groupId>
 		    <artifactId>jaxb-api</artifactId>
-		    <version>2.3.0</version>
+		    <version>2.3.1</version>
 		</dependency>
 
         <dependency>
