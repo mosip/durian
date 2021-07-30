@@ -20,7 +20,7 @@ public class DataShareServiceConfig {
 	 */
 	@Bean
 	public Docket dataShareapiBean() {
-		return new Docket(DocumentationType.SWAGGER_2).groupName("Data Share").select()
+		return new Docket(DocumentationType.SWAGGER_2).select()
 				.apis(RequestHandlerSelectors.basePackage("io.mosip.datashare.controller"))
 				.paths(PathSelectors.regex("(?!/(error|actuator).*).*")).build();
 
