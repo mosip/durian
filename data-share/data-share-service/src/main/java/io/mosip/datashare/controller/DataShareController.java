@@ -1,5 +1,6 @@
 package io.mosip.datashare.controller;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -21,17 +22,17 @@ import io.mosip.datashare.dto.DataShareGetResponse;
 import io.mosip.datashare.dto.DataShareResponseDto;
 import io.mosip.datashare.service.DataShareService;
 import io.mosip.kernel.core.util.DateUtils;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * The Class DataShareController.
  */
 @RestController
-@Api(tags = "Data Share")
+@Tag(name = "Data Share", description = "Data Share Controller")
 public class DataShareController {
 
 	@Autowired
@@ -58,9 +59,15 @@ public class DataShareController {
 
 	@PreAuthorize("hasAnyRole('CREATE_SHARE')")
 	@PostMapping(path = "/create/{policyId}/{subscriberId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	@ApiOperation(value = "Get the share data url", response = DataShareResponseDto.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Get Share Data URL successfully"),
-			@ApiResponse(code = 400, message = "Unable to get share data url") })
+	@Operation(summary = "Get the share data url", description = "Get the share data url", tags = { "Data Share" })
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Get Share Data URL successfully",
+					content = @Content(schema = @Schema(implementation = DataShareResponseDto.class))),
+			@ApiResponse(responseCode = "201", description = "Created" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "400", description = "Unable to get share data url" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "403", description = "Forbidden" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "404", description = "Not Found" ,content = @Content(schema = @Schema(hidden = true)))})
 	public ResponseEntity<Object> createDataShare(@RequestBody MultipartFile file,
 			@PathVariable("policyId") String policyId, @PathVariable("subscriberId") String subscriberId) {
 		
@@ -88,10 +95,16 @@ public class DataShareController {
 	 */
 
 	@GetMapping(path = "/get/{policyId}/{subscriberId}/{randomShareKey}", consumes = MediaType.ALL_VALUE)
-	@ApiOperation(value = "Get the data share file", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Get share data file successfully"),
-			@ApiResponse(code = 400, message = "Unable to fetch file"),
-			@ApiResponse(code = 500, message = "Internal Server Error") })
+	@Operation(summary = "Get the data share file", description = "Get the data share file", tags = { "Data Share" })
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Get share data file successfully",
+					content = @Content(schema = @Schema(implementation = String.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch file" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "403", description = "Forbidden" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "404", description = "Not Found" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "500", description = "Internal Server Error" ,content = @Content(schema = @Schema(hidden = true)))
+	})
 	@ResponseBody
 	public ResponseEntity<byte[]> getFile(@PathVariable("policyId") String policyId,
 			@PathVariable("subscriberId") String subscriberId, @PathVariable("randomShareKey") String randomShareKey) {
@@ -113,10 +126,15 @@ public class DataShareController {
 	 */
 
 	@GetMapping(path = "/datashare/{shortUrlKey}", consumes = MediaType.ALL_VALUE)
-	@ApiOperation(value = "Get the data share file", response = String.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Get share data file successfully"),
-			@ApiResponse(code = 400, message = "Unable to fetch file"),
-			@ApiResponse(code = 500, message = "Internal Server Error") })
+	@Operation(summary = "Get the data share file", description = "Get the data share file", tags = { "Data Share" })
+	@ApiResponses(value = {
+			@ApiResponse(responseCode = "200", description = "Get share data file successfully",
+					content = @Content(schema = @Schema(implementation = String.class))),
+			@ApiResponse(responseCode = "400", description = "Unable to fetch file" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "401", description = "Unauthorized" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "403", description = "Forbidden" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "404", description = "Not Found" ,content = @Content(schema = @Schema(hidden = true))),
+			@ApiResponse(responseCode = "500", description = "Internal Server Error" ,content = @Content(schema = @Schema(hidden = true)))})
 	@ResponseBody
 	public ResponseEntity<byte[]> getFile(@PathVariable("shortUrlKey") String shortUrlKey) {
 
