@@ -32,6 +32,7 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -111,6 +112,7 @@ public class RestUtil {
 						responseClass);
 
         } catch (Exception e) {
+			tokenExceptionHandler(e);
             throw new ApiNotAccessibleException(e);
 			}
 		}
@@ -167,6 +169,7 @@ public class RestUtil {
 						.exchange(uriComponents.toUri(), HttpMethod.GET, setRequestHeader(null, null), responseType)
                     .getBody();
         } catch (Exception e) {
+			tokenExceptionHandler(e);
             throw new ApiNotAccessibleException(e);
         }
 
@@ -194,6 +197,7 @@ public class RestUtil {
 				result = (T) restTemplate
 						.exchange(urlWithPath, HttpMethod.GET, setRequestHeader(null, null), responseType).getBody();
 			} catch (Exception e) {
+				tokenExceptionHandler(e);
 				throw new Exception(e);
 			}
 
@@ -331,4 +335,13 @@ public class RestUtil {
 		request.setUserName(environment.getProperty("data.share.token.request.username"));
         return request;
     }
+
+	public void tokenExceptionHandler(Exception e) {
+		if (e instanceof HttpStatusCodeException) {
+			HttpStatusCodeException ex = (HttpStatusCodeException) e;
+			if (ex.getRawStatusCode() == 401) {
+				System.setProperty("token", "");
+			}
+		}
+	}
 }

@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>	
 	<groupId>io.mosip.datashare</groupId>
 	<artifactId>durian</artifactId>
-	<version>1.1.4</version>
+	<version>1.1.4.1-SNAPSHOT</version>
 	<packaging>pom</packaging>	
 	
 	<name>MOSIP Durian Parent POM</name>
@@ -87,7 +87,7 @@
                 <plugin>
                   <groupId>org.apache.maven.plugins</groupId>
                   <artifactId>maven-javadoc-plugin</artifactId>
-                  <version>2.9.1</version>
+                  <version>3.2.0</version>
                   <executions>
                         <execution>
                           <id>attach-javadocs</id>
