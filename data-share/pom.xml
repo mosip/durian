@@ -5,11 +5,11 @@
   <parent>
     <groupId>io.mosip.datashare</groupId>
     <artifactId>durian</artifactId>
-    <version>1.1.4</version>
+    <version>1.1.4.1-SNAPSHOT</version>
   </parent>
   
   <artifactId>data-share</artifactId>
-  <version>1.1.4</version>
+  <version>1.1.4.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   
   <name>data-share</name>
@@ -23,7 +23,7 @@
 		<maven.war.plugin.version>3.1.0</maven.war.plugin.version>		
 		<maven.jacoco.plugin.version>0.8.1</maven.jacoco.plugin.version>
 		<maven.sonar.plugin.version>3.7.0.1746</maven.sonar.plugin.version>
-		<maven.javadoc.version>3.0.1</maven.javadoc.version>
+		<maven.javadoc.version>3.2.0</maven.javadoc.version>
 		
         <spring.boot.version>2.0.2.RELEASE</spring.boot.version>
         <spring.data.jpa.version>2.0.7.RELEASE</spring.data.jpa.version>
