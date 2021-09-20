@@ -34,7 +34,7 @@
         <kernel.keygenerator.bouncycastle.version>1.0.6</kernel.keygenerator.bouncycastle.version>
         <swagger.version>2.9.2</swagger.version>
         <kernel.core.version>1.1.4.5-SNAPSHOT</kernel.core.version>
-        <kernel.logger.logback.version>1.1.4</kernel.logger.logback.version>
+        <kernel.logger.logback.version>1.1.4.5-SNAPSHOT</kernel.logger.logback.version>
         <kernel.keygenerator.bouncycastle.version>1.0.6</kernel.keygenerator.bouncycastle.version>
         <kernel.crypto-jce.version>1.0.6</kernel.crypto-jce.version>
         <powermock.beta.version>2.0.7</powermock.beta.version>
