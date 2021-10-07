@@ -34,18 +34,6 @@
                 </developer>
         </developers>
 
-	<repositories>
-		<repository>
-			<id>ossrh</id>
-			<name>Central Repository</name>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-			<layout>default</layout>
-			<snapshots>
-			<enabled>true</enabled>
-			</snapshots>
-		</repository>
-	</repositories>
-
     <repositories>
         <repository>
             <id>ossrh</id>
