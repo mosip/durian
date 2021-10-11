@@ -57,7 +57,8 @@ public class DataShareController {
 	 * @return the response entity
 	 */
 
-	@PreAuthorize("hasAnyRole('CREATE_SHARE')")
+	//@PreAuthorize("hasAnyRole('CREATE_SHARE')")
+	@PreAuthorize("hasAnyRole(@authorizedRoles.getPostcreatepolicyidsubscriberid())")
 	@PostMapping(path = "/create/{policyId}/{subscriberId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	@Operation(summary = "Get the share data url", description = "Get the share data url", tags = { "Data Share" })
 	@ApiResponses(value = {
