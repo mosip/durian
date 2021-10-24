@@ -5,7 +5,7 @@ public enum DataUtilityErrorCodes {
 
 	DATA_ENCRYPTION_FAILURE_EXCEPTION("DAT-SER-001", "Data Encryption failed"),
 	API_NOT_ACCESSIBLE_EXCEPTION("DAT-SER-002", "API not accessible"),
-	FILE_EXCEPTION("DAT-SER-003", "File is not exists"),
+	FILE_EXCEPTION("DAT-SER-003", "File is not exists or File is empty"),
 	URL_CREATION_EXCEPTION("DAT-SER-004", "URL creation exception"),
 	SIGNATURE_EXCEPTION("DAT-SER-005", "Failed to generate digital signature"),
 	DATA_SHARE_NOT_FOUND_EXCEPTION("DAT-SER-006", "Data share not found"),
