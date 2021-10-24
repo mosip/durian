@@ -72,8 +72,8 @@ public class EncryptionUtil {
 	 * @return the byte[]
 	 */
 	public byte[] encryptData(byte[] filedata, String partnerId) {
-		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
-				LoggerFileConstant.SUBSCRIBERID.toString(), "EncryptionUtil::encryptData()::entry");
+		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
+				partnerId, "EncryptionUtil::encryptData()::entry");
 
 		String dataToBeEncrypted;
 		byte[] encryptedPacket = null;
@@ -106,23 +106,23 @@ public class EncryptionUtil {
 				throw new DataEncryptionFailureException(error.getMessage());
 			}
 			encryptedPacket = responseObject.getResponse().getData().getBytes();
-			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(), partnerId,
+			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"Encryption done successfully");
-			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
-					LoggerFileConstant.SUBSCRIBERID.toString(), "EncryptionUtil::encryptData()::exit");
+			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
+					partnerId, "EncryptionUtil::encryptData()::exit");
 		} catch (IOException e) {
-			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
-					LoggerFileConstant.SUBSCRIBERID.toString(),
+			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
+					partnerId,
 					"EncryptionUtil::encryptData():: error with error message" + ExceptionUtils.getStackTrace(e));
 			throw new DataEncryptionFailureException(IO_EXCEPTION, e);
 		} catch (DateTimeParseException e) {
-			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
-					LoggerFileConstant.SUBSCRIBERID.toString(),
+			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
+					partnerId,
 					"EncryptionUtil::encryptData():: error with error message" + ExceptionUtils.getStackTrace(e));
 			throw new DataEncryptionFailureException(DATE_TIME_EXCEPTION);
 		} catch (Exception e) {
-			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.SUBSCRIBERID.toString(),
-					LoggerFileConstant.SUBSCRIBERID.toString(),
+			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
+					partnerId,
 					"EncryptionUtil::encryptData():: error with error message" + ExceptionUtils.getStackTrace(e));
 			if (e.getCause() instanceof HttpClientErrorException) {
 				HttpClientErrorException httpClientException = (HttpClientErrorException) e.getCause();
