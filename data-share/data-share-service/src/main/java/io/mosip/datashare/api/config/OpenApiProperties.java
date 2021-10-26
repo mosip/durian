@@ -1,17 +1,19 @@
 package io.mosip.datashare.api.config;
 
-import lombok.Data;
+import java.util.List;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
+import lombok.Data;
 
 @Configuration
 @ConfigurationProperties(prefix = "openapi")
 @Data
 public class OpenApiProperties {
     private InfoProperty info;
-    private DataShareServiceServer dataShareServiceServer;
+    private Service service;
+    private Group group;
 }
 
 @Data
@@ -29,7 +31,7 @@ class LicenseProperty {
 }
 
 @Data
-class DataShareServiceServer {
+class Service {
     private List<Server> servers;
 }
 
@@ -37,4 +39,10 @@ class DataShareServiceServer {
 class Server {
     private String description;
     private String url;
+}
+
+@Data
+class Group {
+    private String name;
+    private List<String> paths;
 }
