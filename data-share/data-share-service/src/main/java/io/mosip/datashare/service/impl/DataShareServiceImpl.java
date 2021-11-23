@@ -213,16 +213,16 @@ public class DataShareServiceImpl implements DataShareService {
 
 			String shortRandomShareKey = RandomStringUtils.randomAlphanumeric(length);
 			cacheUtil.getShortUrlData(shortRandomShareKey, policyId, subscriberId, randomShareKey);
-			url = dataSharePolicies.getShareDomainUrlWrite() != null ?
-					dataSharePolicies.getShareDomainUrlWrite() +
+			url = dataSharePolicies.getShareDomainUrlRead() != null ?
+					dataSharePolicies.getShareDomainUrlRead() +
 							servletPath + DATASHARE + FORWARD_SLASH + shortRandomShareKey
 					:
 					protocol + dataSharePolicies.getShareDomain() +
 					servletPath + DATASHARE + FORWARD_SLASH + shortRandomShareKey;
 
 		} else {
-			url = dataSharePolicies.getShareDomainUrlWrite() != null ?
-					dataSharePolicies.getShareDomainUrlWrite() +
+			url = dataSharePolicies.getShareDomainUrlRead() != null ?
+					dataSharePolicies.getShareDomainUrlRead() +
 							servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
 							+ policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey
 					: protocol + dataSharePolicies.getShareDomain() + servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
