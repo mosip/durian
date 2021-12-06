@@ -15,8 +15,7 @@ import lombok.Setter;
 @Setter
 public class AuthorizedRolesDTO {
 
-    ##Datashare_controller
+
     private List<String> postcreatepolicyidsubscriberid;
     
-}
 }
