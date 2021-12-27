@@ -115,7 +115,7 @@ public class DigitalSignatureUtilTest {
 	public void testIOException() throws JsonParseException, JsonMappingException, IOException {
 		String test = "testdata";
 		byte[] sample = test.getBytes();
-		Mockito.when(objectMapper.readValue(jwtsignResponse, SignResponseDto.class)).thenThrow(new IOException());
+		Mockito.when(objectMapper.readValue(jwtsignResponse, SignResponseDto.class)).thenThrow(new JsonMappingException("Exception"));
 		String signedData = digitalSignatureUtil.jwtSign(sample, "test", "", "", "");
 	}
 
