@@ -81,7 +81,7 @@ public class PolicyUtilTest {
 	public void testIOException() throws JsonParseException, JsonMappingException, IOException {
 
 		Mockito.when(objectMapper.readValue(policyResponse, PolicyManagerResponseDto.class))
-				.thenThrow(new JsonMappingException("Exception"));
+				.thenThrow(new IOException());
 		policyUtil.getPolicyDetail("1234", "3456");
 	}
 
