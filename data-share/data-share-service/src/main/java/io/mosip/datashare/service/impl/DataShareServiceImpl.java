@@ -106,7 +106,7 @@ public class DataShareServiceImpl implements DataShareService {
 	@Value("${mosip.data.share.urlshortner}")
 	private boolean isShortUrl;
 
-	public static final String PARTNERBASED = "Partner Based";
+	public static final String PARTNERBASED = "PartnerBased";
 
 	public static final String NONE = "none";
 
