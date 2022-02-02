@@ -1,12 +1,7 @@
-# Data-Share
+# Data Share
+The Data Share module contains Data Share Service. 
 
-This repository contains the source code and design documents for MOSIP Data Share module.
-
-# Dependencies
-Data Share services' dependencies are mentioned below.  For all Kernel services refer to [commons repo](https://github.com/mosip/commons)
-
-* data-share-service
-    * kernel-keymanager-service
-    * kernel-auth-service
-    * kernel-config-service
-
+## About
+The Data Share Service performs 2 operations -
+* Create Share: Stores data provided by caller in object store and returns a datashare URL.
+* Get Data Share: Gets the data from object store when the URL is called.
