@@ -1,17 +1,6 @@
-# data-share-service
-This repository contains the source code and design documents for MOSIP Data Share module.
+# Data Share Service
 
-## Design
-
-[Design - Data-Share](https://mosip.atlassian.net/wiki/spaces/DD/pages/80904528/Data+Share)
-
-## Default Context Path and Port
-```
-server.port=8097
-server.servlet.path=/v1/datashare
-
-## Configurable Properties from Config Server
-mosip.data.share.service.id=mosip.data.share
-mosip.data.share.service.version=1.0
-
-mosip.data.share.urlshortner=false
+## About
+The Data Share Service performs 2 operations -
+* Create Share: Stores data provided by caller in object store and returns a datashare URL.
+* Get Data Share: Gets the data from object store when the URL is called.
