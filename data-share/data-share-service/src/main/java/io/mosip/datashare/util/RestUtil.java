@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.PostConstruct;
 import javax.net.ssl.SSLContext;
 
 import org.apache.http.Header;
@@ -61,6 +62,12 @@ public class RestUtil {
 
 	/** The Constant AUTHORIZATION. */
     private static final String AUTHORIZATION = "Authorization=";
+	private RestTemplate localRestTemplate;
+
+	@PostConstruct
+	private void loadRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+		localRestTemplate = getRestTemplate();
+	}
 
 	/**
 	 * Post api.
@@ -103,11 +110,9 @@ public class RestUtil {
 				}
 			}
 
-        RestTemplate restTemplate;
-
         try {
-            restTemplate = getRestTemplate();
-				result = (T) restTemplate.postForObject(builder.toUriString(), setRequestHeader(requestType, mediaType),
+            localRestTemplate = getRestTemplate();
+				result = (T) localRestTemplate.postForObject(builder.toUriString(), setRequestHeader(requestType, mediaType),
 						responseClass);
 
         } catch (Exception e) {
@@ -159,11 +164,10 @@ public class RestUtil {
 
 			}
 			uriComponents = builder.build(false).encode();
-        RestTemplate restTemplate;
 
         try {
-            restTemplate = getRestTemplate();
-				result = (T) restTemplate
+            localRestTemplate = getRestTemplate();
+				result = (T) localRestTemplate
 						.exchange(uriComponents.toUri(), HttpMethod.GET, setRequestHeader(null, null), responseType)
                     .getBody();
         } catch (Exception e) {
@@ -187,11 +191,9 @@ public class RestUtil {
 
 			URI urlWithPath = builder.build(pathsegments);
 
-			RestTemplate restTemplate;
-
 			try {
-				restTemplate = getRestTemplate();
-				result = (T) restTemplate
+				localRestTemplate = getRestTemplate();
+				result = (T) localRestTemplate
 						.exchange(urlWithPath, HttpMethod.GET, setRequestHeader(null, null), responseType).getBody();
 			} catch (Exception e) {
 				throw new Exception(e);
@@ -209,16 +211,17 @@ public class RestUtil {
 	 * @throws KeyStoreException        the key store exception
 	 */
     public RestTemplate getRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
-        TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
-        SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
-                .loadTrustMaterial(null, acceptingTrustStrategy).build();
-        SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-        CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(csf).build();
-        HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-        requestFactory.setHttpClient(httpClient);
-
-        return new RestTemplate(requestFactory);
-
+    	if (localRestTemplate == null) {
+			TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
+			SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
+					.loadTrustMaterial(null, acceptingTrustStrategy).build();
+			SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
+			CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(csf).build();
+			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+			requestFactory.setHttpClient(httpClient);
+			localRestTemplate = new RestTemplate(requestFactory);
+		}
+		return localRestTemplate;
     }
 
 	/**
