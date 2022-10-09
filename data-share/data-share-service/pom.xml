@@ -5,11 +5,11 @@
   <parent>
     <groupId>io.mosip.datashare</groupId>
     <artifactId>data-share</artifactId>
-    <version>1.1.5.3</version>
+    <version>1.1.5.3-p1-SNAPSHOT</version>
   </parent>
 
   <artifactId>data-share-service</artifactId>
-  <version>1.1.5.3</version>
+  <version>1.1.5.3-p1-SNAPSHOT</version>
   <name>data-share-service</name>
 
   <properties>
