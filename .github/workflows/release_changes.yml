@@ -52,9 +52,11 @@ jobs:
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v3
       with:
+        token: ${{ secrets.ACTION_PAT }}
         commit-message: Release Bot Pre-release changes
         title: Release changes
         body: Automated PR for ${{ github.event.inputs.releaseTags }} release.
         branch: release-branch
         delete-branch: true
         base: ${{ github.event.inputs.base }}
+        
