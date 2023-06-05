@@ -8,7 +8,7 @@ public enum DataUtilityErrorCodes {
 	FILE_EXCEPTION("DAT-SER-003", "File is not exists or File is empty"),
 	URL_CREATION_EXCEPTION("DAT-SER-004", "URL creation exception"),
 	SIGNATURE_EXCEPTION("DAT-SER-005", "Failed to generate digital signature"),
-	DATA_SHARE_NOT_FOUND_EXCEPTION("DAT-SER-006", "Data share not found"),
+	DATA_SHARE_NOT_FOUND_EXCEPTION("DAT-SER-008", "Data share not found"),
 	DATA_SHARE_EXPIRED_EXCEPTION("DAT-SER-006", "Data share usuage expired"),
 	POLICY_EXCEPTION("DAT-SER-007", "Exception while fetching policy details");
 
