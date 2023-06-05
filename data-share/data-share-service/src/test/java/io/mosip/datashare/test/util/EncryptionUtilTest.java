@@ -131,7 +131,7 @@ public class EncryptionUtilTest {
 		byte[] sample = test.getBytes();
 		PowerMockito.mockStatic(CryptoUtil.class);
 		Mockito.when(CryptoUtil.decodeBase64(Mockito.anyString())).thenReturn(sample);
-		Mockito.when(objectMapper.readValue(response, CryptomanagerResponseDto.class)).thenThrow(new IOException());
+		Mockito.when(objectMapper.readValue(response, CryptomanagerResponseDto.class)).thenThrow(new JsonMappingException("Exception"));
 		encryptionUtil.encryptData(sample, "");
 
 	}

@@ -3,8 +3,6 @@ package io.mosip.datashare.service.impl;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -29,7 +27,6 @@ import io.mosip.datashare.dto.PolicyResponseDto;
 import io.mosip.datashare.exception.DataShareExpiredException;
 import io.mosip.datashare.exception.DataShareNotFoundException;
 import io.mosip.datashare.exception.FileException;
-import io.mosip.datashare.exception.URLCreationException;
 import io.mosip.datashare.logger.DataShareLogger;
 import io.mosip.datashare.service.DataShareService;
 import io.mosip.datashare.util.CacheUtil;
@@ -88,7 +85,10 @@ public class DataShareServiceImpl implements DataShareService {
 	public static final String FORWARD_SLASH = "/";
 
 	/** The Constant PROTOCOL. */
-	public static final String PROTOCOL = "https";
+	public static final String HTTPS_PROTOCOL = "https://";
+
+	/** The Constant PROTOCOL. */
+	public static final String HTTP_PROTOCOL = "http://";
 
 	/** The Constant servletPath. */
 	public static final String GET = "get";
@@ -165,7 +165,7 @@ public class DataShareServiceImpl implements DataShareService {
 				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, policyDetailResponse,
 						jwtSignature);
 				randomShareKey = storefile(aclMap, new ByteArrayInputStream(encryptedData), policyId, subscriberId);
-				String dataShareUrl = constructURL(randomShareKey, dataSharePolicies.getShareDomain(), policyId,
+				String dataShareUrl = constructURL(randomShareKey, dataSharePolicies, policyId,
 						subscriberId);
 
 
@@ -202,38 +202,33 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @param subscriberId   the subscriber id
 	 * @return the string
 	 */
-	private String constructURL(String randomShareKey, String shareDomain, String policyId, String subscriberId) {
-		URL dataShareUrl = null;
-		String protocol = PROTOCOL;
+	private String constructURL(String randomShareKey, DataShareDto dataSharePolicies, String policyId, String subscriberId) {
+		String protocol = (httpProtocol != null && !httpProtocol.isEmpty()) ? HTTP_PROTOCOL : HTTPS_PROTOCOL;
 		String url = null;
-		try {
-			if (httpProtocol != null && !httpProtocol.isEmpty()) {
-				protocol = httpProtocol;
+		if (isShortUrl) {
+			int length = DEFAULT_KEY_LENGTH;
+			if (env.getProperty(KEY_LENGTH) != null) {
+				length = Integer.parseInt(env.getProperty(KEY_LENGTH));
 			}
-			if (isShortUrl) {
-				int length = DEFAULT_KEY_LENGTH;
-				if (env.getProperty(KEY_LENGTH) != null) {
-					length = Integer.parseInt(env.getProperty(KEY_LENGTH));
-				}
 
-				String shortRandomShareKey = RandomStringUtils.randomAlphanumeric(length);
-				cacheUtil.getShortUrlData(shortRandomShareKey, policyId, subscriberId, randomShareKey);
-				dataShareUrl = new URL(protocol, shareDomain,
-						servletPath + DATASHARE + FORWARD_SLASH + shortRandomShareKey);
+			String shortRandomShareKey = RandomStringUtils.randomAlphanumeric(length);
+			cacheUtil.getShortUrlData(shortRandomShareKey, policyId, subscriberId, randomShareKey);
+			url = dataSharePolicies.getShareDomainUrlRead() != null ?
+					dataSharePolicies.getShareDomainUrlRead() +
+							servletPath + DATASHARE + FORWARD_SLASH + shortRandomShareKey
+					:
+					protocol + dataSharePolicies.getShareDomain() +
+					servletPath + DATASHARE + FORWARD_SLASH + shortRandomShareKey;
 
-			} else {  
-				dataShareUrl = new URL(protocol, shareDomain, servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
-						+ policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey);
-			}
-			url = dataShareUrl.toString();
-			url = url.replaceAll("[\\[\\]]", "");
-
-		} catch (MalformedURLException e) {
-			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-					policyId,
-					DataUtilityErrorCodes.URL_CREATION_EXCEPTION.getErrorMessage() + ExceptionUtils.getStackTrace(e));
-			new URLCreationException(e);
+		} else {
+			url = dataSharePolicies.getShareDomainUrlRead() != null ?
+					dataSharePolicies.getShareDomainUrlRead() +
+							servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
+							+ policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey
+					: protocol + dataSharePolicies.getShareDomain() + servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
+					+ policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey;
 		}
+		url = url.replaceAll("[\\[\\]]", "");
 
 		return url;
 	}
