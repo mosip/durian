@@ -358,9 +358,12 @@ public class DataShareServiceImpl implements DataShareService {
 		}
 
 		String randomShareKey=subscriberId+policyId+DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())+RandomStringUtils.randomAlphanumeric(length);
-		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, null, null, randomShareKey,
-				filedata);
-		objectStoreAdapter.addObjectMetaData(subscriberId, policyId, null, null, randomShareKey, metaDataMap);
+		/*
+		 * boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId,
+		 * null, null, randomShareKey, filedata);
+		 */
+		boolean isDataStored = objectStoreAdapter.putObjectWithMetaData(subscriberId, policyId, null, null, randomShareKey, filedata, metaDataMap);
+		//objectStoreAdapter.addObjectMetaData(subscriberId, policyId, null, null, randomShareKey, metaDataMap);
 		LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), randomShareKey,
 				"Is data stored to object store" + isDataStored);
 
