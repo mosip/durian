@@ -3,13 +3,13 @@ package io.mosip.datashare.service.impl;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
@@ -35,6 +35,7 @@ import io.mosip.datashare.util.EncryptionUtil;
 import io.mosip.datashare.util.PolicyUtil;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
+import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
 
 
@@ -211,7 +212,7 @@ public class DataShareServiceImpl implements DataShareService {
 				length = Integer.parseInt(env.getProperty(KEY_LENGTH));
 			}
 
-			String shortRandomShareKey = RandomStringUtils.randomAlphanumeric(length);
+			String shortRandomShareKey = generateShortRandomShareKey(length);
 			cacheUtil.getShortUrlData(shortRandomShareKey, policyId, subscriberId, randomShareKey);
 			url = dataSharePolicies.getShareDomainUrlRead() != null ?
 					dataSharePolicies.getShareDomainUrlRead() +
@@ -357,7 +358,9 @@ public class DataShareServiceImpl implements DataShareService {
 			length = Integer.parseInt(env.getProperty(KEY_LENGTH));
 		}
 
-		String randomShareKey=subscriberId+policyId+DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())+RandomStringUtils.randomAlphanumeric(length);
+		String randomShareKey = subscriberId + policyId
+				+ DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())
+				+ generateShortRandomShareKey(length);
 		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, null, null, randomShareKey,
 				filedata);
 		objectStoreAdapter.addObjectMetaData(subscriberId, policyId, null, null, randomShareKey, metaDataMap);
@@ -395,5 +398,11 @@ public class DataShareServiceImpl implements DataShareService {
 
 	}
 
+	private String generateShortRandomShareKey(int byteLength) {
+		SecureRandom secureRandom = new SecureRandom();
+		byte[] token = new byte[byteLength];
+		secureRandom.nextBytes(token);
+		return CryptoUtil.encodeToURLSafeBase64(token);
+	}
 
 }
