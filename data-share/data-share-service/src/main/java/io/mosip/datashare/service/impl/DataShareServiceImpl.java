@@ -204,7 +204,7 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @return the string
 	 */
 	private String constructURL(String randomShareKey, DataShareDto dataSharePolicies, String policyId, String subscriberId) {
-		String protocol = (httpProtocol != null && !httpProtocol.isEmpty()) ? HTTP_PROTOCOL : HTTPS_PROTOCOL;
+		String protocol = (dataSharePolicies.getProtocol() != null) ? dataSharePolicies.getProtocol() :HTTP_PROTOCOL ;
 		String url = null;
 		if (isShortUrl) {
 			int length = DEFAULT_KEY_LENGTH;
