@@ -140,18 +140,18 @@ public class DataShareServiceImpl implements DataShareService {
 				PolicyResponseDto policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
 
 
-				DataShareDto dataSharePolicies = policyDetailResponse.getPolicies().getDataSharePolicies();
+				DataShareDto dataSharePolicy = policyDetailResponse.getPolicies().getDataSharePolicies();
 				byte[] encryptedData = null;
-				if (PARTNERBASED.equalsIgnoreCase(dataSharePolicies.getEncryptionType())) {
+				if (PARTNERBASED.equalsIgnoreCase(dataSharePolicy.getEncryptionType())) {
 					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-							policyId, subscriberId + "encryptionNeeded" + dataSharePolicies.getEncryptionType());
+							policyId, subscriberId + "encryptionNeeded" + dataSharePolicy.getEncryptionType());
 					encryptedData = encryptionUtil.encryptData(fileData, subscriberId);
 
-				} else if (NONE.equalsIgnoreCase(dataSharePolicies.getEncryptionType())) {
+				} else if (NONE.equalsIgnoreCase(dataSharePolicy.getEncryptionType())) {
 
 					encryptedData = fileData;
 					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-							policyId, subscriberId + "Without encryption" + dataSharePolicies.getEncryptionType());
+							policyId, subscriberId + "Without encryption" + dataSharePolicy.getEncryptionType());
 
 				}
 				
@@ -159,22 +159,22 @@ public class DataShareServiceImpl implements DataShareService {
 						.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN));
 				String expiryTime = DateUtils
 						.toISOString(DateUtils.addMinutes(DateUtils.parseUTCToDate(createShareTime),
-								Integer.parseInt(dataSharePolicies.getValidForInMinutes())));
+								Integer.parseInt(dataSharePolicy.getValidForInMinutes())));
 
 				String jwtSignature = digitalSignatureUtil.jwtSign(fileData, file.getName(), subscriberId,
 						createShareTime, expiryTime);
 				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, policyDetailResponse,
 						jwtSignature);
 				randomShareKey = storefile(aclMap, new ByteArrayInputStream(encryptedData), policyId, subscriberId);
-				String dataShareUrl = constructURL(randomShareKey, dataSharePolicies, policyId,
+				String dataShareUrl = constructURL(randomShareKey, dataSharePolicy, policyId,
 						subscriberId);
 
 
 				dataShare.setUrl(dataShareUrl);
 				dataShare.setPolicyId(policyId);
 				dataShare.setSubscriberId(subscriberId);
-				dataShare.setValidForInMinutes(Integer.parseInt(dataSharePolicies.getValidForInMinutes()));
-				dataShare.setTransactionsAllowed(Integer.parseInt(dataSharePolicies.getTransactionsAllowed()));
+				dataShare.setValidForInMinutes(Integer.parseInt(dataSharePolicy.getValidForInMinutes()));
+				dataShare.setTransactionsAllowed(Integer.parseInt(dataSharePolicy.getTransactionsAllowed()));
 				LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 						"Datashare" + dataShare.toString());
 				LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
@@ -203,8 +203,8 @@ public class DataShareServiceImpl implements DataShareService {
 	 * @param subscriberId   the subscriber id
 	 * @return the string
 	 */
-	private String constructURL(String randomShareKey, DataShareDto dataSharePolicies, String policyId, String subscriberId) {
-		String protocol = (dataSharePolicies.getProtocol() != null) ? dataSharePolicies.getProtocol() :HTTP_PROTOCOL ;
+	private String constructURL(String randomShareKey, DataShareDto dataSharePolicy, String policyId, String subscriberId) {
+		String protocol = (dataSharePolicy.getProtocol() != null) ? dataSharePolicy.getProtocol() :HTTP_PROTOCOL ;
 		String url = null;
 		if (isShortUrl) {
 			int length = DEFAULT_KEY_LENGTH;
@@ -214,19 +214,19 @@ public class DataShareServiceImpl implements DataShareService {
 
 			String shortRandomShareKey = generateShortRandomShareKey(length);
 			cacheUtil.getShortUrlData(shortRandomShareKey, policyId, subscriberId, randomShareKey);
-			url = dataSharePolicies.getShareDomainUrlRead() != null ?
-					dataSharePolicies.getShareDomainUrlRead() +
+			url = dataSharePolicy.getShareDomainUrlRead() != null ?
+					dataSharePolicy.getShareDomainUrlRead() +
 							servletPath + DATASHARE + FORWARD_SLASH + shortRandomShareKey
 					:
-					protocol + dataSharePolicies.getShareDomain() +
+					protocol + dataSharePolicy.getShareDomain() +
 					servletPath + DATASHARE + FORWARD_SLASH + shortRandomShareKey;
 
 		} else {
-			url = dataSharePolicies.getShareDomainUrlRead() != null ?
-					dataSharePolicies.getShareDomainUrlRead() +
+			url = dataSharePolicy.getShareDomainUrlRead() != null ?
+					dataSharePolicy.getShareDomainUrlRead() +
 							servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
 							+ policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey
-					: protocol + dataSharePolicies.getShareDomain() + servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
+					: protocol + dataSharePolicy.getShareDomain() + servletPath + FORWARD_SLASH + GET + FORWARD_SLASH
 					+ policyId + FORWARD_SLASH + subscriberId + FORWARD_SLASH + randomShareKey;
 		}
 		url = url.replaceAll("[\\[\\]]", "");
