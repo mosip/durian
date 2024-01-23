@@ -4,24 +4,20 @@ import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
-import javax.net.ssl.SSLContext;
 
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.TrustStrategy;
+import org.springframework.beans.factory.annotation.Value;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -33,6 +29,7 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -56,13 +53,20 @@ import io.mosip.kernel.core.util.TokenHandlerUtil;
 @Component
 public class RestUtil {
 
+	@Value("${data.share.default.resttemplate.httpclient.connections.max.per.host:20}")
+	private int maxConnectionPerRoute;
+
+	@Value("${data.share.default.resttemplate.httpclient.connections.max:100}")
+	private int totalMaxConnection;
+
+	private RestTemplate localRestTemplate;
+
 	/** The environment. */
     @Autowired
     private Environment environment;
 
 	/** The Constant AUTHORIZATION. */
     private static final String AUTHORIZATION = "Authorization=";
-	private RestTemplate localRestTemplate;
 
 	@PostConstruct
 	private void loadRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
@@ -116,6 +120,7 @@ public class RestUtil {
 						responseClass);
 
         } catch (Exception e) {
+			tokenExceptionHandler(e);
             throw new ApiNotAccessibleException(e);
 			}
 		}
@@ -171,6 +176,7 @@ public class RestUtil {
 						.exchange(uriComponents.toUri(), HttpMethod.GET, setRequestHeader(null, null), responseType)
                     .getBody();
         } catch (Exception e) {
+			tokenExceptionHandler(e);
             throw new ApiNotAccessibleException(e);
         }
 
@@ -196,6 +202,7 @@ public class RestUtil {
 				result = (T) localRestTemplate
 						.exchange(urlWithPath, HttpMethod.GET, setRequestHeader(null, null), responseType).getBody();
 			} catch (Exception e) {
+				tokenExceptionHandler(e);
 				throw new Exception(e);
 			}
 
@@ -211,14 +218,12 @@ public class RestUtil {
 	 * @throws KeyStoreException        the key store exception
 	 */
     public RestTemplate getRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
-    	if (localRestTemplate == null) {
-			TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
-			SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
-					.loadTrustMaterial(null, acceptingTrustStrategy).build();
-			SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-			CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(csf).build();
+		if (localRestTemplate == null) {
+			HttpClientBuilder httpClientBuilder = HttpClients.custom().setMaxConnPerRoute(maxConnectionPerRoute)
+					.setMaxConnTotal(totalMaxConnection).disableCookieManagement();
 			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-			requestFactory.setHttpClient(httpClient);
+			requestFactory.setHttpClient(httpClientBuilder.build());
+
 			localRestTemplate = new RestTemplate(requestFactory);
 		}
 		return localRestTemplate;
@@ -334,4 +339,13 @@ public class RestUtil {
 		request.setUserName(environment.getProperty("data.share.token.request.username"));
         return request;
     }
+
+	public void tokenExceptionHandler(Exception e) {
+		if (e instanceof HttpStatusCodeException) {
+			HttpStatusCodeException ex = (HttpStatusCodeException) e;
+			if (ex.getRawStatusCode() == 401) {
+				System.setProperty("token", "");
+			}
+		}
+	}
 }
