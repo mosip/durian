@@ -12,8 +12,14 @@ public class DataShareDto {
 	private String encryptionType;
 	
 	private String shareDomain;
+
+	private String shareDomainUrlWrite;
+
+	private String shareDomainUrlRead;
 	
 	private String typeOfShare;
+	
+	private String protocol;
 	
 	private String source;
 }
