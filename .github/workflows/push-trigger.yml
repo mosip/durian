@@ -20,6 +20,7 @@ on:
       - develop
       - MOSIP*
       - release*
+      - DSD-4323
 
 jobs:
   build-maven-data-share:
