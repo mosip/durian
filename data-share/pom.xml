@@ -5,11 +5,11 @@
   <parent>
     <groupId>io.mosip.datashare</groupId>
     <artifactId>durian</artifactId>
-    <version>1.1.5.3-P2</version>
+    <version>1.1.5.3-P3</version>
   </parent>
   
   <artifactId>data-share</artifactId>
-  <version>1.1.5.3-P2</version>
+  <version>1.1.5.3-P3</version>
   <packaging>pom</packaging>
   
   <name>data-share</name>
