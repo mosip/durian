@@ -19,5 +19,7 @@ public class DataShareDto {
 	
 	private String typeOfShare;
 	
+	private String protocol;
+	
 	private String source;
 }

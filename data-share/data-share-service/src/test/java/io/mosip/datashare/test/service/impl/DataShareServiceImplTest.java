@@ -12,14 +12,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
@@ -48,7 +46,7 @@ import io.mosip.kernel.core.util.CryptoUtil;
 @PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*", "org.w3c.dom.*",
 		"com.sun.org.apache.xalan.*" })
 @PowerMockRunnerDelegate(SpringRunner.class)
-@PrepareForTest(value = { RandomStringUtils.class, URL.class, CryptoUtil.class })
+@PrepareForTest(value = { URL.class, CryptoUtil.class })
 public class DataShareServiceImplTest {
 
 	@Mock
@@ -98,8 +96,6 @@ public class DataShareServiceImplTest {
 		ReflectionTestUtils.setField(dataShareServiceImpl, "httpProtocol", "https");
 		Mockito.when(env.getProperty("mosip.data.share.datetime.pattern"))
 				.thenReturn("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-		PowerMockito.mockStatic(RandomStringUtils.class);
-		Mockito.when(RandomStringUtils.randomAlphanumeric(Mockito.anyInt())).thenReturn("dfg3456f");
 		metaDataMap = new HashMap<String, Object>();
 		metaDataMap.put("transactionsallowed", "2");
 		ClassLoader classLoader = getClass().getClassLoader();
