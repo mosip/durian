@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -269,7 +270,11 @@ public class DataShareServiceImpl implements DataShareService {
 			}
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 					"DataShareServiceImpl::getDataFile()::exit");
-		} catch (IOException e) {
+		}
+		catch (ObjectStoreAdapterException e){
+			throw new DataShareNotFoundException();
+		}
+		catch (IOException e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 					IO_EXCEPTION + ExceptionUtils.getStackTrace(e));
 			throw new FileException(IO_EXCEPTION, e);

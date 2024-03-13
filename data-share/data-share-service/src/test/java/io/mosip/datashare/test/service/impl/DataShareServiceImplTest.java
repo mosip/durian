@@ -1,5 +1,6 @@
 package io.mosip.datashare.test.service.impl;
 
+import static io.mosip.commons.khazana.constant.KhazanaErrorCodes.OBJECT_STORE_NOT_ACCESSIBLE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -11,6 +12,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.amazonaws.services.dynamodbv2.xspec.M;
+import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -230,6 +233,12 @@ public class DataShareServiceImplTest {
 	public void getDataFileExceptionTest() {
 		Mockito.when(cacheUtil.getShortUrlData(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()))
 				.thenReturn("" + "," + "");
+		dataShareServiceImpl.getDataFile("12dfsdff");
+	}
+
+	@Test(expected = DataShareNotFoundException.class)
+	public void getDataFileDataShareNotFoundExceptionTest() {
+		Mockito.doThrow(new ObjectStoreAdapterException(OBJECT_STORE_NOT_ACCESSIBLE.getErrorCode(), OBJECT_STORE_NOT_ACCESSIBLE.getErrorMessage(), new Throwable())).when(objectStoreAdapter).getObject(Mockito.anyString(),Mockito.anyString(),Mockito.any(),Mockito.any(),Mockito.anyString());
 		dataShareServiceImpl.getDataFile("12dfsdff");
 	}
 }
