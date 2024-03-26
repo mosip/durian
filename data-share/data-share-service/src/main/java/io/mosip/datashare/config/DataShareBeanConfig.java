@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import io.mosip.commons.khazana.impl.S3Adapter;
 import io.mosip.commons.khazana.spi.ObjectStoreAdapter;
@@ -17,6 +18,7 @@ import io.mosip.datashare.util.RestUtil;
 
 @Configuration
 @EnableCaching
+@EnableScheduling
 @PropertySource("classpath:bootstrap.properties")
 public class DataShareBeanConfig {
 
