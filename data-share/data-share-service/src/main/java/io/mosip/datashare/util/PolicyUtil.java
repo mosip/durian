@@ -6,7 +6,10 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -46,6 +49,8 @@ public class PolicyUtil {
 	/** The mapper. */
 	@Autowired
 	private ObjectMapper mapper;
+
+	@Cacheable(value = "partnerpolicyCache", key = "#policyId + '_' + #subscriberId")
 	public PolicyResponseDto getPolicyDetail(String policyId, String subscriberId) {
 
 		try {
@@ -92,5 +97,12 @@ public class PolicyUtil {
 
 	}
 
+	@CacheEvict(value = "partnerpolicyCache", allEntries = true)
+	@Scheduled(fixedRateString = "${mosip.data.share.policy-cache.expiry-time-millisec}")
+	public void emptyPartnerPolicyCache() {
+		LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+				"emptyPartnerPolicyCache", "Emptying Partner Policy cache");
+
+	}
 
 }
