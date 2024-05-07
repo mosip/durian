@@ -12,7 +12,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-//import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -46,13 +45,6 @@ public class TestSecurityConfig {
 				"/*/configuration/security", "/*/swagger-resources/**", "/*/swagger-ui.html" };
 	}
 
-//	@Override
-//	protected void configure(final HttpSecurity httpSecurity) throws Exception {
-//		httpSecurity.csrf().disable();
-//		httpSecurity.httpBasic().and().authorizeRequests().anyRequest().authenticated().and().sessionManagement()
-//				.sessionCreationPolicy(SessionCreationPolicy.STATELESS).and().exceptionHandling()
-//				.authenticationEntryPoint(unauthorizedEntryPoint());
-//	}
 
 	@Bean
 	public AuthenticationEntryPoint unauthorizedEntryPoint() {

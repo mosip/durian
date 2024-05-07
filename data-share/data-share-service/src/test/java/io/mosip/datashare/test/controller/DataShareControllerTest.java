@@ -87,11 +87,6 @@ public class DataShareControllerTest {
     @WithUserDetails("test")
     public void testDataShareSuccess() throws Exception {
         DataShare dataShare=new DataShare();
-//		Mockito.when(
-//				dataShareService.createDataShare(Mockito.anyString(), Mockito.anyString(),
-//						Mockito.any(MultipartFile.class)))
-//				.thenReturn(dataShare);
-
         doReturn(dataShare).when(dataShareService).createDataShare(Mockito.anyString(), Mockito.anyString(),
                 Mockito.any(MultipartFile.class));
         String sample = "Test";
