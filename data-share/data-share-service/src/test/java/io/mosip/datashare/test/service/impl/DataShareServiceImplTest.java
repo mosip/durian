@@ -12,7 +12,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.amazonaws.services.dynamodbv2.xspec.M;
 import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;

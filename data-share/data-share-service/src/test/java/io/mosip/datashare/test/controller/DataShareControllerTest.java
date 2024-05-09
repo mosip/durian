@@ -1,6 +1,7 @@
 package io.mosip.datashare.test.controller;
 
 
+import static org.mockito.Mockito.doReturn;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.ByteArrayInputStream;
@@ -45,94 +46,90 @@ import io.mosip.datashare.test.config.TestConfig;
 @TestPropertySource(locations = "classpath:application.properties")
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*", "org.w3c.dom.*",
-		"com.sun.org.apache.xalan.*" })
+        "com.sun.org.apache.xalan.*" })
 @SpringBootTest(classes = TestBootApplication.class)
 @AutoConfigureMockMvc
 public class DataShareControllerTest {
 
 
 
-	@Autowired
-	private WebApplicationContext wac;
+    @Autowired
+    private WebApplicationContext wac;
 
-	private MockMvc mockMvc;
+    private MockMvc mockMvc;
 
-	@Mock
-	private DataShareService dataShareService;
+    @Mock
+    private DataShareService dataShareService;
 
-	@InjectMocks
-	private DataShareController dataShareController;
+    @InjectMocks
+    private DataShareController dataShareController;
 
-	MockMultipartFile multiPartFile;
+    MockMultipartFile multiPartFile;
 
-	@Mock
-	Environment env;
+    @Mock
+    Environment env;
 
-	@Before
-	public void setup() throws Exception {
-		MockitoAnnotations.initMocks(this);
-		this.mockMvc = MockMvcBuilders.standaloneSetup(dataShareController).build();
-		ClassLoader classLoader = getClass().getClassLoader();
-		File file = new File(classLoader.getResource("test.txt").getFile());
+    @Before
+    public void setup() throws Exception {
+        MockitoAnnotations.initMocks(this);
+        this.mockMvc = MockMvcBuilders.standaloneSetup(dataShareController).build();
+        ClassLoader classLoader = getClass().getClassLoader();
+        File file = new File(classLoader.getResource("test.txt").getFile());
 
-		InputStream inputStream = new FileInputStream(file);
-		byte[] dataBytes = IOUtils.toByteArray(inputStream);
-		multiPartFile = new MockMultipartFile("file", "NameOfTheFile", "multipart/form-data",
-				new ByteArrayInputStream(dataBytes));
+        InputStream inputStream = new FileInputStream(file);
+        byte[] dataBytes = IOUtils.toByteArray(inputStream);
+        multiPartFile = new MockMultipartFile("file", "NameOfTheFile", "multipart/form-data",
+                new ByteArrayInputStream(dataBytes));
 
-	}
+    }
 
-	@Test
-	@WithUserDetails("test")
-	public void testDataShareSuccess() throws Exception {
-		DataShare dataShare=new DataShare();
-		Mockito.when(
-				dataShareService.createDataShare(Mockito.anyString(), Mockito.anyString(),
-						Mockito.any(MultipartFile.class)))
-				.thenReturn(dataShare);
-		String sample = "Test";
-		Mockito.when(env.getProperty("mosip.data.share.datetime.pattern"))
-				.thenReturn("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    @Test
+    @WithUserDetails("test")
+    public void testDataShareSuccess() throws Exception {
+        DataShare dataShare=new DataShare();
+        doReturn(dataShare).when(dataShareService).createDataShare(Mockito.anyString(), Mockito.anyString(),
+                Mockito.any(MultipartFile.class));
+        String sample = "Test";
+        Mockito.when(env.getProperty("mosip.data.share.datetime.pattern"))
+                .thenReturn("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
-		mockMvc.perform(MockMvcRequestBuilders.multipart("/create/policyId/subcriberId").file(multiPartFile)
+        mockMvc.perform(MockMvcRequestBuilders.multipart("/create/policyId/subcriberId").file(multiPartFile)
+                        .contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
+                        .content(sample.getBytes()))
+                .andExpect(status().isOk());
+    }
 
-				.contentType(MediaType.MULTIPART_FORM_DATA_VALUE)
-				.content(sample.getBytes()))
-				.andExpect(status().isOk());
+    @Test
+    @WithUserDetails("test")
+    public void testGetDataShareSuccess() throws Exception {
+        String sample = "Test";
+        DataShareGetResponse response = new DataShareGetResponse();
+        response.setFileBytes(sample.getBytes());
+        response.setSignature("signature");
+        Mockito.when(dataShareService.getDataFile(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())
+        ).thenReturn(response);
 
-	}
 
-	@Test
-	@WithUserDetails("test")
-	public void testGetDataShareSuccess() throws Exception {
-		String sample = "Test";
-		DataShareGetResponse response = new DataShareGetResponse();
-		response.setFileBytes(sample.getBytes());
-		response.setSignature("signature");
-		Mockito.when(dataShareService.getDataFile(Mockito.anyString(), Mockito.anyString(), Mockito.anyString())
-		).thenReturn(response);
-		
-		
-		
-		mockMvc.perform(MockMvcRequestBuilders.get("/get/policyId/subscriberId/randomsharekey")
-				.contentType(MediaType.ALL_VALUE).content(sample.getBytes()))
-				.andExpect(status().isOk());
 
-	}
+        mockMvc.perform(MockMvcRequestBuilders.get("/get/policyId/subscriberId/randomsharekey")
+                        .contentType(MediaType.ALL_VALUE).content(sample.getBytes()))
+                .andExpect(status().isOk());
 
-	@Test
-	@WithUserDetails("test")
-	public void testGetDataShareWithShorKeySuccess() throws Exception {
-		String sample = "Test";
-		DataShareGetResponse response = new DataShareGetResponse();
-		response.setFileBytes(sample.getBytes());
-		response.setSignature("signature");
-		Mockito.when(dataShareService.getDataFile(Mockito.anyString()))
-				.thenReturn(response);
+    }
 
-		mockMvc.perform(MockMvcRequestBuilders.get("/datashare/randomsharekey")
-				.contentType(MediaType.ALL_VALUE).content(sample.getBytes())).andExpect(status().isOk());
+    @Test
+    @WithUserDetails("test")
+    public void testGetDataShareWithShorKeySuccess() throws Exception {
+        String sample = "Test";
+        DataShareGetResponse response = new DataShareGetResponse();
+        response.setFileBytes(sample.getBytes());
+        response.setSignature("signature");
+        Mockito.when(dataShareService.getDataFile(Mockito.anyString()))
+                .thenReturn(response);
 
-	}
+        mockMvc.perform(MockMvcRequestBuilders.get("/datashare/randomsharekey")
+                .contentType(MediaType.ALL_VALUE).content(sample.getBytes())).andExpect(status().isOk());
+
+    }
 
 }
