@@ -60,14 +60,18 @@ public class PolicyUtil {
 			pathsegments.put("partnerId", subscriberId);
 			pathsegments.put("policyId", policyId);
 			String responseString = restUtil.getApi(ApiName.PARTNER_POLICY, pathsegments, String.class);
+            PolicyResponseDto policyResponseDto=new PolicyResponseDto();
 
-			PolicyManagerResponseDto responseObject = mapper.readValue(responseString,
-					PolicyManagerResponseDto.class);
-			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
-				ServiceError error = responseObject.getErrors().get(0);
-				throw new PolicyException(error.getMessage());
-			}
-			PolicyResponseDto policyResponseDto = responseObject.getResponse();
+                PolicyManagerResponseDto responseObject = mapper.readValue(responseString,
+                        PolicyManagerResponseDto.class);
+            if (responseObject!=null) {
+                if (responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
+                    ServiceError error = responseObject.getErrors().get(0);
+                    throw new PolicyException(error.getMessage());
+                }
+                policyResponseDto = responseObject.getResponse();
+            }
+
 			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 					policyId,
 					"Fetched policy details successfully");

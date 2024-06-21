@@ -8,9 +8,12 @@ import java.security.cert.X509Certificate;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import jakarta.annotation.PostConstruct;
 import javax.net.ssl.SSLContext;
+import javax.swing.text.html.Option;
+
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
@@ -220,8 +223,13 @@ public class RestUtil {
                 Iterator<String> iterator = httpHeader.keySet().iterator();
                 while (iterator.hasNext()) {
                     String key = iterator.next();
-                    if (!(headers.containsKey("Content-Type") && key == "Content-Type"))
-                        headers.add(key, httpHeader.get(key).get(0));
+                    if (!(headers.containsKey("Content-Type") && key.equalsIgnoreCase("Content-Type"))) {
+                        String value = Optional.ofNullable(httpHeader.get(key))
+                                .flatMap(list -> list.stream().findFirst())
+                                .orElseThrow(() -> new IllegalArgumentException("Header value is null"));
+                        headers.add(key, value);
+//                        headers.add(key, httpHeader.get(key).get(0));
+                    }
                 }
                 return new HttpEntity<Object>(httpEntity.getBody(), headers);
             } catch (ClassCastException e) {
