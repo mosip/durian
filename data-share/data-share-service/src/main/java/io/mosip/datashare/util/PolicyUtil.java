@@ -61,8 +61,7 @@ public class PolicyUtil {
 			pathsegments.put("policyId", policyId);
 			String responseString = restUtil.getApi(ApiName.PARTNER_POLICY, pathsegments, String.class);
             PolicyResponseDto policyResponseDto=new PolicyResponseDto();
-
-                PolicyManagerResponseDto responseObject = mapper.readValue(responseString,
+            PolicyManagerResponseDto responseObject = mapper.readValue(responseString,
                         PolicyManagerResponseDto.class);
             if (responseObject!=null) {
                 if (responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {

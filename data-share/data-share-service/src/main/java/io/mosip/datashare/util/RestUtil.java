@@ -228,7 +228,6 @@ public class RestUtil {
                                 .flatMap(list -> list.stream().findFirst())
                                 .orElseThrow(() -> new IllegalArgumentException("Header value is null"));
                         headers.add(key, value);
-//                        headers.add(key, httpHeader.get(key).get(0));
                     }
                 }
                 return new HttpEntity<Object>(httpEntity.getBody(), headers);
