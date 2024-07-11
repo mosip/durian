@@ -61,6 +61,10 @@ public class DigitalSignatureUtil {
 	@Value("${mosip.data.share.digest.algorithm:SHA256}")
 	private String digestAlg;
 
+	/** Defines whether JWT signature generation needs to be disabled */
+	@Value("${mosip.data.share.signature.disabled:false}")
+	private boolean isSignatureDisabled;
+
 	/**
 	 * Sign.
 	 *
@@ -71,40 +75,45 @@ public class DigitalSignatureUtil {
 		try {
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"DigitalSignatureUtil::jwtSign()::entry");
-			String hashData = HMACUtils2.digestAsPlainText(file);
-			String digestData = CryptoUtil.encodeBase64(hashData.getBytes());
+			String signedData = "";
+			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
+					"isSignatureDisabled : " + isSignatureDisabled);
+			if(!isSignatureDisabled) {
+				String hashData = HMACUtils2.digestAsPlainText(file);
+				String digestData = CryptoUtil.encodeBase64(hashData.getBytes());
 
-			JSONObject signatureJson = createSignatureJson(filname, partnerId, digestData, creationTime, expiryTime);
-			String dataTobeSigned = mapper.writeValueAsString(signatureJson);
-			String encodedData = CryptoUtil.encodeBase64(dataTobeSigned.getBytes());
-			JWTSignatureRequestDto dto = new JWTSignatureRequestDto();
-			dto.setDataToSign(encodedData);
-			dto.setIncludeCertHash(
-					environment.getProperty("mosip.data.share.includeCertificateHash", Boolean.class));
-			dto.setIncludeCertificate(
-					environment.getProperty("mosip.data.share.includeCertificate", Boolean.class));
-			dto.setIncludePayload(environment.getProperty("mosip.data.share.includePayload", Boolean.class));
-			String certificateUrl = environment.getProperty("mosip.data.share.certificateurl");
-			if (StringUtils.isNotEmpty(certificateUrl)) {
-				dto.setCertificateUrl(certificateUrl);
+				JSONObject signatureJson = createSignatureJson(filname, partnerId, digestData, creationTime, expiryTime);
+				String dataTobeSigned = mapper.writeValueAsString(signatureJson);
+				String encodedData = CryptoUtil.encodeBase64(dataTobeSigned.getBytes());
+				JWTSignatureRequestDto dto = new JWTSignatureRequestDto();
+				dto.setDataToSign(encodedData);
+				dto.setIncludeCertHash(
+						environment.getProperty("mosip.data.share.includeCertificateHash", Boolean.class));
+				dto.setIncludeCertificate(
+						environment.getProperty("mosip.data.share.includeCertificate", Boolean.class));
+				dto.setIncludePayload(environment.getProperty("mosip.data.share.includePayload", Boolean.class));
+				String certificateUrl = environment.getProperty("mosip.data.share.certificateurl");
+				if (StringUtils.isNotEmpty(certificateUrl)) {
+					dto.setCertificateUrl(certificateUrl);
+				}
+
+				RequestWrapper<JWTSignatureRequestDto> request = new RequestWrapper<>();
+				request.setRequest(dto);
+				request.setMetadata(null);
+				DateTimeFormatter format = DateTimeFormatter.ofPattern(environment.getProperty(DATETIME_PATTERN));
+				LocalDateTime localdatetime = LocalDateTime
+						.parse(DateUtils.getUTCCurrentDateTimeString(environment.getProperty(DATETIME_PATTERN)), format);
+				request.setRequesttime(localdatetime);
+				String responseString = restUtil.postApi(ApiName.KEYMANAGER_JWTSIGN, null, "", "",
+						MediaType.APPLICATION_JSON, request, String.class);
+
+				SignResponseDto responseObject = mapper.readValue(responseString, SignResponseDto.class);
+				if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
+					ServiceError error = responseObject.getErrors().get(0);
+					throw new SignatureException(error.getMessage());
+				}
+				signedData = responseObject.getResponse().getJwtSignedData();
 			}
-
-			RequestWrapper<JWTSignatureRequestDto> request = new RequestWrapper<>();
-			request.setRequest(dto);
-			request.setMetadata(null);
-			DateTimeFormatter format = DateTimeFormatter.ofPattern(environment.getProperty(DATETIME_PATTERN));
-			LocalDateTime localdatetime = LocalDateTime
-					.parse(DateUtils.getUTCCurrentDateTimeString(environment.getProperty(DATETIME_PATTERN)), format);
-			request.setRequesttime(localdatetime);
-			String responseString = restUtil.postApi(ApiName.KEYMANAGER_JWTSIGN, null, "", "",
-					MediaType.APPLICATION_JSON, request, String.class);
-
-			SignResponseDto responseObject = mapper.readValue(responseString, SignResponseDto.class);
-			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
-				ServiceError error = responseObject.getErrors().get(0);
-				throw new SignatureException(error.getMessage());
-			}
-			String signedData = responseObject.getResponse().getJwtSignedData();
 
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"DigitalSignatureUtil::jwtSign()::exit");

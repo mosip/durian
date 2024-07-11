@@ -119,6 +119,9 @@ public class DataShareServiceImpl implements DataShareService {
 	@Value("${mosip.data.share.protocol}")
 	private String httpProtocol;
 
+	/** Defines whether static data share policy needs to be used for sharing the data*/
+	@Value("${mosip.data.share.static.share.enabled:false}")
+	private boolean staticShareEnabled;
 
 	/** The Constant DATETIME_PATTERN. */
 	private static final String DATETIME_PATTERN = "mosip.data.share.datetime.pattern";
@@ -138,10 +141,17 @@ public class DataShareServiceImpl implements DataShareService {
 			String randomShareKey;
 			try {
 				byte[] fileData = file.getBytes();
-				PolicyResponseDto policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
-
-
-				DataShareDto dataSharePolicy = policyDetailResponse.getPolicies().getDataSharePolicies();
+				DataShareDto dataSharePolicy;
+				LocalDateTime publishDate = null;
+				LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+						"staticDataShareEnabled : " + staticShareEnabled);
+				if(!staticShareEnabled) {
+					PolicyResponseDto policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
+					dataSharePolicy = policyDetailResponse.getPolicies().getDataSharePolicies();
+					publishDate = policyDetailResponse.getPublishDate();
+				} else {
+					dataSharePolicy = policyUtil.getStaticDataSharePolicy(policyId, subscriberId);
+				}
 				byte[] encryptedData = null;
 				if (PARTNERBASED.equalsIgnoreCase(dataSharePolicy.getEncryptionType())) {
 					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
@@ -164,8 +174,8 @@ public class DataShareServiceImpl implements DataShareService {
 
 				String jwtSignature = digitalSignatureUtil.jwtSign(fileData, file.getName(), subscriberId,
 						createShareTime, expiryTime);
-				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, policyDetailResponse,
-						jwtSignature);
+				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, dataSharePolicy,
+						jwtSignature, publishDate);
 				randomShareKey = storefile(aclMap, new ByteArrayInputStream(encryptedData), policyId, subscriberId);
 				String dataShareUrl = constructURL(randomShareKey, dataSharePolicy, policyId,
 						subscriberId);
@@ -325,17 +335,18 @@ public class DataShareServiceImpl implements DataShareService {
 	 *
 	 * @param subscriberId         the subscriber id
 	 * @param policyId             the policy id
-	 * @param policyDetailResponse the policy detail response
+	 * @param dataSharePolicies    the data share policies
+	 * @param jwtSignature 		   the jwt signature for shared object
+	 * @param publishDate 		   the policy publish date
 	 * @return the map
 	 */
 	private Map<String, Object> prepareMetaData(String subscriberId, String policyId,
-			PolicyResponseDto policyResponseDto, String jwtSignature) {
+												DataShareDto dataSharePolicies, String jwtSignature, LocalDateTime publishDate) {
 
-		DataShareDto dataSharePolicies = policyResponseDto.getPolicies().getDataSharePolicies();
 		Map<String, Object> aclMap = new HashMap<>();
 
 		aclMap.put("policyid", policyId);
-		aclMap.put("policypublishdate", policyResponseDto.getPublishDate());
+		aclMap.put("policypublishdate", publishDate);
 		aclMap.put("subscriberId", subscriberId);
 		aclMap.put("validforinminutes", dataSharePolicies.getValidForInMinutes());
 		aclMap.put("transactionsallowed", dataSharePolicies.getTransactionsAllowed());

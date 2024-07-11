@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.mosip.datashare.dto.DataShareDto;
+import io.mosip.datashare.exception.StaticDataShareException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -49,6 +51,15 @@ public class PolicyUtil {
 	/** The mapper. */
 	@Autowired
 	private ObjectMapper mapper;
+
+	/** The static data share policy used for sharing the data. */
+	private static final String STATIC_DATA_SHARE_POLICY = "mosip.data.share.static.share.policy";
+
+	/** The static data share policy used for sharing the data. */
+	private static final String STATIC_DATA_SHARE_POLICY_ID = "mosip.data.share.static.share.policyid";
+
+	/** The static data share policy used for sharing the data. */
+	private static final String STATIC_DATA_SHARE_SUBSCRIBER_ID = "mosip.data.share.static.share.subscriberid";
 
 	@Cacheable(value = "partnerpolicyCache", key = "#policyId + '_' + #subscriberId")
 	public PolicyResponseDto getPolicyDetail(String policyId, String subscriberId) {
@@ -108,4 +119,42 @@ public class PolicyUtil {
 
 	}
 
+	/**
+	 * Provides static data share policy for sharing the data.
+	 * @param policyId Policy Id from request
+	 * @param subscriberId Subscriber Id from request
+	 * @return the DataShareDto object
+	 */
+	public DataShareDto getStaticDataSharePolicy(String policyId, String subscriberId) {
+		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+				policyId, "PolicyUtil::getStaticDataSharePolicy()::entry");
+		try {
+			String staticPolicyId = env.getProperty(STATIC_DATA_SHARE_POLICY_ID);
+			if (staticPolicyId == null)
+				throw new StaticDataShareException("Please configure the static data share policy Id");
+
+			String staticSubscriberId = env.getProperty(STATIC_DATA_SHARE_SUBSCRIBER_ID);
+			if (staticSubscriberId == null)
+				throw new StaticDataShareException("Please configure the static data share subscriber Id");
+
+			if (!staticPolicyId.equals(policyId) || !staticSubscriberId.equals(subscriberId))
+				throw new StaticDataShareException("Either Policy Id or Subscriber Id not matching with configured in system");
+
+			String staticSharePolicy = env.getProperty(STATIC_DATA_SHARE_POLICY);
+			if (staticSharePolicy == null)
+				throw new StaticDataShareException("Please configure the static data share policy");
+
+			DataShareDto dataShareDto = mapper.readValue(staticSharePolicy, DataShareDto.class);
+			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+					"PolicyUtil::getStaticDataSharePolicy()::exit");
+			return dataShareDto;
+		} catch (Exception e) {
+			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+					policyId,
+					"PolicyUtil::getStaticDataSharePolicy():: error with error message" + ExceptionUtils.getStackTrace(e));
+			if(e instanceof StaticDataShareException)
+				throw (StaticDataShareException)e;
+			throw new StaticDataShareException(e);
+		}
+	}
 }

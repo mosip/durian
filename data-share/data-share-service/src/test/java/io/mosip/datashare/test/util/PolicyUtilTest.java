@@ -1,11 +1,12 @@
 package io.mosip.datashare.test.util;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.mosip.datashare.dto.DataShareDto;
+import io.mosip.datashare.exception.StaticDataShareException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,6 +29,8 @@ import io.mosip.datashare.exception.PolicyException;
 import io.mosip.datashare.util.PolicyUtil;
 import io.mosip.datashare.util.RestUtil;
 import io.mosip.kernel.core.exception.ServiceError;
+
+import static org.junit.Assert.*;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*", "org.w3c.dom.*",
@@ -95,5 +98,70 @@ public class PolicyUtilTest {
 		errors.add(error);
 		policyManagerResponseDto.setErrors(errors);
 		policyUtil.getPolicyDetail("1234", "3456");
+	}
+
+	@Test
+	public void staticPolicyIdMissingTest() {
+		Exception exception = assertThrows(StaticDataShareException.class, () -> {
+			policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid");
+		});
+		assertTrue(exception.getMessage().contains("DAT-SER-008"));
+	}
+
+	@Test
+	public void staticSubscriberIdMissingTest() {
+		Mockito.when(environment.getProperty("mosip.data.share.static.share.policyid")).thenReturn("static-policyid");
+		Exception exception = assertThrows(StaticDataShareException.class, () -> {
+			policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid");
+		});
+		assertTrue(exception.getMessage().contains("DAT-SER-008"));
+	}
+
+	@Test
+	public void staticPolicyIdNotMatchingWithRequest() {
+		Mockito.when(environment.getProperty("mosip.data.share.static.share.policyid")).thenReturn("static-policyid");
+		Mockito.when(environment.getProperty("mosip.data.share.static.share.subscriberid")).thenReturn("static-subscriberid");
+		Exception exception = assertThrows(StaticDataShareException.class, () -> {
+			policyUtil.getStaticDataSharePolicy("1234", "static-subscriberid");
+		});
+		assertTrue(exception.getMessage().contains("DAT-SER-008"));
+	}
+
+	@Test
+	public void staticSubscriberIdNotMatchingWithRequest() {
+		Mockito.when(environment.getProperty("mosip.data.share.static.share.policyid")).thenReturn("static-policyid");
+		Mockito.when(environment.getProperty("mosip.data.share.static.share.subscriberid")).thenReturn("static-subscriberid");
+		Exception exception = assertThrows(StaticDataShareException.class, () -> {
+			policyUtil.getStaticDataSharePolicy("1234", "1234");
+		});
+		assertTrue(exception.getMessage().contains("DAT-SER-008"));
+	}
+
+	@Test
+	public void staticPolicyMissingTest() {
+		Mockito.when(environment.getProperty("mosip.data.share.static.share.policyid")).thenReturn("static-policyid");
+		Mockito.when(environment.getProperty("mosip.data.share.static.share.subscriberid")).thenReturn("static-subscriberid");
+		Exception exception = assertThrows(StaticDataShareException.class, () -> {
+			policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid");
+		});
+		assertTrue(exception.getMessage().contains("DAT-SER-008"));
+	}
+
+	@Test
+	public void getStaticDateSharePolicySuccessTest() throws JsonProcessingException {
+		Mockito.when(environment.getProperty("mosip.data.share.static.share.policyid")).thenReturn("static-policyid");
+		Mockito.when(environment.getProperty("mosip.data.share.static.share.subscriberid")).thenReturn("static-subscriberid");
+		Mockito.when(environment.getProperty("mosip.data.share.static.share.policy")).thenReturn("{\"typeOfShare\":\"\",\"transactionsAllowed\":\"2\",\"shareDomain\":\"datashare.datashare\",\"encryptionType\":\"NONE\",\"source\":\"\",\"validForInMinutes\":\"30\"}");
+		DataShareDto dataShareDto = new DataShareDto();
+		dataShareDto.setTypeOfShare("");
+		dataShareDto.setTransactionsAllowed("2");
+		dataShareDto.setShareDomain("datashare.datashare");
+		dataShareDto.setEncryptionType("NONE");
+		dataShareDto.setSource("");
+		dataShareDto.setValidForInMinutes("30");
+		Mockito.when(objectMapper.readValue(Mockito.anyString(), Mockito.any(Class.class))).
+				thenReturn(dataShareDto);
+		DataShareDto response = policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid");
+		assertEquals(dataShareDto.getEncryptionType(), response.getEncryptionType());
 	}
 }

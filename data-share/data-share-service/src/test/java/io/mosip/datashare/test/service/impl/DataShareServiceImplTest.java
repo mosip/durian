@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
+import io.mosip.datashare.exception.StaticDataShareException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -240,4 +241,28 @@ public class DataShareServiceImplTest {
 		Mockito.doThrow(new ObjectStoreAdapterException(OBJECT_STORE_NOT_ACCESSIBLE.getErrorCode(), OBJECT_STORE_NOT_ACCESSIBLE.getErrorMessage(), new Throwable())).when(objectStoreAdapter).getObject(Mockito.anyString(),Mockito.anyString(),Mockito.any(),Mockito.any(),Mockito.anyString());
 		dataShareServiceImpl.getDataFile("12dfsdff");
 	}
+
+	@Test
+	public void createStaticDataShareSuccessTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "staticShareEnabled", true);
+		DataShareDto dataShareDto = new DataShareDto();
+		dataShareDto.setTypeOfShare("");
+		dataShareDto.setTransactionsAllowed("2");
+		dataShareDto.setShareDomain("datashare.datashare");
+		dataShareDto.setEncryptionType("NONE");
+		dataShareDto.setSource("");
+		dataShareDto.setValidForInMinutes("30");
+		Mockito.when(policyUtil.getStaticDataSharePolicy(Mockito.anyString(), Mockito.anyString()))
+				.thenReturn(dataShareDto);
+		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
+		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
+	}
+	@Test(expected = StaticDataShareException.class)
+	public void staticDateShareExceptionTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "staticShareEnabled", true);
+		Mockito.doThrow(new StaticDataShareException()).
+				when(policyUtil).getStaticDataSharePolicy(Mockito.anyString(), Mockito.anyString());
+		dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
+	}
+
 }
