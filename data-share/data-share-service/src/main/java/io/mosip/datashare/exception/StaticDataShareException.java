@@ -3,6 +3,11 @@ package io.mosip.datashare.exception;
 import io.mosip.datashare.constant.DataUtilityErrorCodes;
 import io.mosip.kernel.core.exception.BaseUncheckedException;
 
+/**
+ *
+ * @author Ashok Kumar Sharma
+ *
+ */
 public class StaticDataShareException extends BaseUncheckedException {
 
     /** The Constant serialVersionUID. */
