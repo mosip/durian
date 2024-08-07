@@ -135,13 +135,4 @@ public class DigitalSignatureUtilTest {
 
 		String signedData = digitalSignatureUtil.jwtSign(sample, "test", "", "", "");
 	}
-
-	@Test
-	public void disableSignatureSuccessTest() throws IOException {
-		String test = "testdata";
-		byte[] sample = test.getBytes();
-		ReflectionTestUtils.setField(digitalSignatureUtil, "isSignatureDisabled", true);
-		String signedData = digitalSignatureUtil.jwtSign(sample, "test", "", "", "");
-		assertEquals("", signedData);
-	}
 }

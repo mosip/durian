@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import io.mosip.datashare.exception.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
@@ -16,6 +15,14 @@ import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
 import io.mosip.datashare.controller.DataShareController;
 import io.mosip.datashare.dto.DataShareResponseDto;
 import io.mosip.datashare.dto.ErrorDTO;
+import io.mosip.datashare.exception.ApiNotAccessibleException;
+import io.mosip.datashare.exception.DataEncryptionFailureException;
+import io.mosip.datashare.exception.DataShareExpiredException;
+import io.mosip.datashare.exception.DataShareNotFoundException;
+import io.mosip.datashare.exception.FileException;
+import io.mosip.datashare.exception.PolicyException;
+import io.mosip.datashare.exception.SignatureException;
+import io.mosip.datashare.exception.URLCreationException;
 import io.mosip.kernel.core.exception.BaseCheckedException;
 import io.mosip.kernel.core.exception.BaseUncheckedException;
 import io.mosip.kernel.core.util.DateUtils;
@@ -78,12 +85,6 @@ public class DataShareExceptionHandler {
 	public ResponseEntity<DataShareResponseDto> objectStoreAdapterException(ObjectStoreAdapterException e) {
 		return buildDataShareApiExceptionResponse((Exception) e);
 	}
-
-	@ExceptionHandler(StaticDataShareException.class)
-	public ResponseEntity<DataShareResponseDto> staticDataShareException(StaticDataShareException e) {
-		return buildDataShareApiExceptionResponse((Exception) e);
-	}
-
 	private ResponseEntity<DataShareResponseDto> buildDataShareApiExceptionResponse(Exception ex) {
 		DataShareResponseDto response = new DataShareResponseDto();
 		Throwable e = ex;

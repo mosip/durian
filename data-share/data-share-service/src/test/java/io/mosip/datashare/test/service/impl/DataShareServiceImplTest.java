@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
-import io.mosip.datashare.exception.StaticDataShareException;
+import io.mosip.datashare.exception.PolicyException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -244,7 +244,7 @@ public class DataShareServiceImplTest {
 
 	@Test
 	public void createStaticDataShareSuccessTest() {
-		ReflectionTestUtils.setField(dataShareServiceImpl, "staticShareEnabled", true);
+		ReflectionTestUtils.setField(dataShareServiceImpl, "standaloneModeEnabled", true);
 		DataShareDto dataShareDto = new DataShareDto();
 		dataShareDto.setTypeOfShare("");
 		dataShareDto.setTransactionsAllowed("2");
@@ -254,15 +254,35 @@ public class DataShareServiceImplTest {
 		dataShareDto.setValidForInMinutes("30");
 		Mockito.when(policyUtil.getStaticDataSharePolicy(Mockito.anyString(), Mockito.anyString()))
 				.thenReturn(dataShareDto);
-		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
-		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
+		String policyId = "static-policyid";
+		String subscriberId = "static-subscriberid";
+		DataShare dataShare = dataShareServiceImpl.createDataShare(policyId, subscriberId, multiPartFile);
+		assertEquals("Data Share created successfully", policyId, dataShare.getPolicyId());
 	}
-	@Test(expected = StaticDataShareException.class)
-	public void staticDateShareExceptionTest() {
-		ReflectionTestUtils.setField(dataShareServiceImpl, "staticShareEnabled", true);
-		Mockito.doThrow(new StaticDataShareException()).
+
+	@Test(expected = PolicyException.class)
+	public void createStaticDataSharePolicyExceptionTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "standaloneModeEnabled", true);
+		Mockito.doThrow(new PolicyException()).
 				when(policyUtil).getStaticDataSharePolicy(Mockito.anyString(), Mockito.anyString());
 		dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
 	}
 
+	@Test
+	public void disableSignatureSuccessTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "isSignatureDisabled", true);
+		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
+		Mockito.verify(digitalSignatureUtil, Mockito.never()).jwtSign(Mockito.any(),
+				Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
+	}
+
+	@Test
+	public void enableSignatureSuccessTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "isSignatureDisabled", false);
+		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
+		Mockito.verify(digitalSignatureUtil, Mockito.atLeastOnce()).jwtSign(Mockito.any(),
+				Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
+	}
 }

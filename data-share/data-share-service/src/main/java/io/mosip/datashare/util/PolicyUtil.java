@@ -3,9 +3,10 @@ package io.mosip.datashare.util;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import io.mosip.datashare.dto.DataShareDto;
-import io.mosip.datashare.exception.StaticDataShareException;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -52,14 +53,21 @@ public class PolicyUtil {
 	@Autowired
 	private ObjectMapper mapper;
 
-	/** The static data share policy used for sharing the data. */
-	private static final String STATIC_DATA_SHARE_POLICY = "mosip.data.share.static.share.policy";
+	/** Defines whether static data share policy needs to be used for sharing the data*/
+	@Value("${mosip.data.share.standalone.mode.enabled:false}")
+	private boolean standaloneModeEnabled;
 
-	/** The static data share policy used for sharing the data. */
-	private static final String STATIC_DATA_SHARE_POLICY_ID = "mosip.data.share.static.share.policyid";
+	/** The static data share policy Json used for sharing the data. */
+	@Value("${mosip.data.share.static-policy.policy-json:#{null}}")
+	private String staticPolicyJson;
 
-	/** The static data share policy used for sharing the data. */
-	private static final String STATIC_DATA_SHARE_SUBSCRIBER_ID = "mosip.data.share.static.share.subscriberid";
+	/** The static data share policyId used for sharing the data. */
+	@Value("${mosip.data.share.static-policy.policy-id:#{null}}")
+	private String staticPolicyId;
+
+	/** The static data share subscriberId used for sharing the data. */
+	@Value("${mosip.data.share.static-policy.subscriber-id:#{null}}")
+		private String staticSubscriberId;
 
 	@Cacheable(value = "partnerpolicyCache", key = "#policyId + '_' + #subscriberId")
 	public PolicyResponseDto getPolicyDetail(String policyId, String subscriberId) {
@@ -129,22 +137,10 @@ public class PolicyUtil {
 		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 				policyId, "PolicyUtil::getStaticDataSharePolicy()::entry");
 		try {
-			String staticPolicyId = env.getProperty(STATIC_DATA_SHARE_POLICY_ID);
-			if (staticPolicyId == null)
-				throw new StaticDataShareException("Please configure the static data share policy Id");
+			if (!policyId.equals(staticPolicyId) || !subscriberId.equals(staticSubscriberId))
+				throw new PolicyException("Either Policy Id or Subscriber Id not matching with configured in system");
 
-			String staticSubscriberId = env.getProperty(STATIC_DATA_SHARE_SUBSCRIBER_ID);
-			if (staticSubscriberId == null)
-				throw new StaticDataShareException("Please configure the static data share subscriber Id");
-
-			if (!staticPolicyId.equals(policyId) || !staticSubscriberId.equals(subscriberId))
-				throw new StaticDataShareException("Either Policy Id or Subscriber Id not matching with configured in system");
-
-			String staticSharePolicy = env.getProperty(STATIC_DATA_SHARE_POLICY);
-			if (staticSharePolicy == null)
-				throw new StaticDataShareException("Please configure the static data share policy");
-
-			DataShareDto dataShareDto = mapper.readValue(staticSharePolicy, DataShareDto.class);
+			DataShareDto dataShareDto = mapper.readValue(staticPolicyJson, DataShareDto.class);
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 					"PolicyUtil::getStaticDataSharePolicy()::exit");
 			return dataShareDto;
@@ -152,9 +148,25 @@ public class PolicyUtil {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 					policyId,
 					"PolicyUtil::getStaticDataSharePolicy():: error with error message" + ExceptionUtils.getStackTrace(e));
-			if(e instanceof StaticDataShareException)
-				throw (StaticDataShareException)e;
-			throw new StaticDataShareException(e);
+			if(e instanceof PolicyException)
+				throw (PolicyException)e;
+			throw new PolicyException(e);
 		}
+	}
+
+	/** This method validates the properties configured for the standalone mode for the data-share application.*/
+	@PostConstruct
+	private void validateStandaloneDataShareProperties() {
+		if(!standaloneModeEnabled) {
+			LOGGER.info("Application is running in integrated mode");
+			return;
+		}
+		LOGGER.info("Application is running in standalone mode");
+		if (Objects.isNull(staticPolicyId))
+			throw new PolicyException("Please configure the static data share policy Id");
+		if (Objects.isNull(staticSubscriberId))
+			throw new PolicyException("Please configure the static data share subscriber Id");
+		if (Objects.isNull(staticPolicyJson))
+			throw new PolicyException("Please configure the static data share policy");
 	}
 }

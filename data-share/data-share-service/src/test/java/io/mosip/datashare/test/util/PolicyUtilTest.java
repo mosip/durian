@@ -1,12 +1,14 @@
 package io.mosip.datashare.test.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.mosip.datashare.dto.DataShareDto;
-import io.mosip.datashare.exception.StaticDataShareException;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,8 +31,7 @@ import io.mosip.datashare.exception.PolicyException;
 import io.mosip.datashare.util.PolicyUtil;
 import io.mosip.datashare.util.RestUtil;
 import io.mosip.kernel.core.exception.ServiceError;
-
-import static org.junit.Assert.*;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({ "com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*", "org.w3c.dom.*",
@@ -102,56 +103,99 @@ public class PolicyUtilTest {
 
 	@Test
 	public void staticPolicyIdMissingTest() {
-		Exception exception = assertThrows(StaticDataShareException.class, () -> {
-			policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid");
+		ReflectionTestUtils.setField(policyUtil, "standaloneModeEnabled", true);
+		Exception exception = assertThrows(PolicyException.class, () -> {
+			ReflectionTestUtils.invokeMethod(policyUtil,
+					"validateStandaloneDataShareProperties");
 		});
-		assertTrue(exception.getMessage().contains("DAT-SER-008"));
+		assertTrue(exception.getMessage().contains("DAT-SER-007"));
 	}
 
 	@Test
 	public void staticSubscriberIdMissingTest() {
-		Mockito.when(environment.getProperty("mosip.data.share.static.share.policyid")).thenReturn("static-policyid");
-		Exception exception = assertThrows(StaticDataShareException.class, () -> {
-			policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid");
+		ReflectionTestUtils.setField(policyUtil, "standaloneModeEnabled", true);
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyId", "static-policyid");
+		Exception exception = assertThrows(PolicyException.class, () -> {
+			ReflectionTestUtils.invokeMethod(policyUtil,
+					"validateStandaloneDataShareProperties");
 		});
-		assertTrue(exception.getMessage().contains("DAT-SER-008"));
+		assertTrue(exception.getMessage().contains("DAT-SER-007"));
+	}
+
+	@Test
+	public void staticPolicyJsonMissingTest() {
+		ReflectionTestUtils.setField(policyUtil, "standaloneModeEnabled", true);
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyId", "static-policyid");
+		ReflectionTestUtils.setField(policyUtil, "staticSubscriberId", "static-subscriberid");
+		Exception exception = assertThrows(PolicyException.class, () -> {
+			ReflectionTestUtils.invokeMethod(policyUtil,
+					"validateStandaloneDataShareProperties");
+		});
+		assertTrue(exception.getMessage().contains("DAT-SER-007"));
+	}
+
+	@Test
+	public void validateDataSharePropertiesWithStandaloneModeEnabled() {
+		ReflectionTestUtils.setField(policyUtil, "standaloneModeEnabled", true);
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyId", "static-policyid");
+		ReflectionTestUtils.setField(policyUtil, "staticSubscriberId", "static-subscriberid");
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyJson",
+				"{\"typeOfShare\":\"\",\"transactionsAllowed\":\"2\"," +
+						"\"shareDomain\":\"datashare.datashare\",\"encryptionType\":\"NONE\",\"source\":\"\",\"validForInMinutes\":\"30\"}");
+		ReflectionTestUtils.invokeMethod(policyUtil,
+				"validateStandaloneDataShareProperties");
+	}
+
+	@Test
+	public void validateDataSharePropertiesWithStandaloneModeDisabled() {
+		ReflectionTestUtils.setField(policyUtil, "standaloneModeEnabled", false);
+		ReflectionTestUtils.invokeMethod(policyUtil,
+				"validateStandaloneDataShareProperties");
 	}
 
 	@Test
 	public void staticPolicyIdNotMatchingWithRequest() {
-		Mockito.when(environment.getProperty("mosip.data.share.static.share.policyid")).thenReturn("static-policyid");
-		Mockito.when(environment.getProperty("mosip.data.share.static.share.subscriberid")).thenReturn("static-subscriberid");
-		Exception exception = assertThrows(StaticDataShareException.class, () -> {
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyId", "static-policyid");
+		ReflectionTestUtils.setField(policyUtil, "staticSubscriberId", "static-subscriberid");
+		Exception exception = assertThrows(PolicyException.class, () -> {
 			policyUtil.getStaticDataSharePolicy("1234", "static-subscriberid");
 		});
-		assertTrue(exception.getMessage().contains("DAT-SER-008"));
+		assertTrue(exception.getMessage().contains("DAT-SER-007"));
 	}
 
 	@Test
 	public void staticSubscriberIdNotMatchingWithRequest() {
-		Mockito.when(environment.getProperty("mosip.data.share.static.share.policyid")).thenReturn("static-policyid");
-		Mockito.when(environment.getProperty("mosip.data.share.static.share.subscriberid")).thenReturn("static-subscriberid");
-		Exception exception = assertThrows(StaticDataShareException.class, () -> {
-			policyUtil.getStaticDataSharePolicy("1234", "1234");
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyId", "static-policyid");
+		ReflectionTestUtils.setField(policyUtil, "staticSubscriberId", "static-subscriberid");
+		Exception exception = assertThrows(PolicyException.class, () -> {
+			policyUtil.getStaticDataSharePolicy("static-policyid", "1234");
 		});
-		assertTrue(exception.getMessage().contains("DAT-SER-008"));
+		assertTrue(exception.getMessage().contains("DAT-SER-007"));
 	}
 
 	@Test
-	public void staticPolicyMissingTest() {
-		Mockito.when(environment.getProperty("mosip.data.share.static.share.policyid")).thenReturn("static-policyid");
-		Mockito.when(environment.getProperty("mosip.data.share.static.share.subscriberid")).thenReturn("static-subscriberid");
-		Exception exception = assertThrows(StaticDataShareException.class, () -> {
+	public void invalidStaticJsonPolicy() throws JsonProcessingException {
+		ReflectionTestUtils.setField(policyUtil, "standaloneModeEnabled", true);
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyId", "static-policyid");
+		ReflectionTestUtils.setField(policyUtil, "staticSubscriberId", "static-subscriberid");
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyJson",
+				"abc"); //Not a valid JSON
+		Mockito.when(objectMapper.readValue(Mockito.anyString(), Mockito.any(Class.class))).
+				thenThrow(new JsonParseException("Exception"));
+		Exception exception = assertThrows(PolicyException.class, () -> {
 			policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid");
 		});
-		assertTrue(exception.getMessage().contains("DAT-SER-008"));
+		assertTrue(exception.getMessage().contains("DAT-SER-007"));
 	}
 
 	@Test
 	public void getStaticDateSharePolicySuccessTest() throws JsonProcessingException {
-		Mockito.when(environment.getProperty("mosip.data.share.static.share.policyid")).thenReturn("static-policyid");
-		Mockito.when(environment.getProperty("mosip.data.share.static.share.subscriberid")).thenReturn("static-subscriberid");
-		Mockito.when(environment.getProperty("mosip.data.share.static.share.policy")).thenReturn("{\"typeOfShare\":\"\",\"transactionsAllowed\":\"2\",\"shareDomain\":\"datashare.datashare\",\"encryptionType\":\"NONE\",\"source\":\"\",\"validForInMinutes\":\"30\"}");
+		ReflectionTestUtils.setField(policyUtil, "standaloneModeEnabled", true);
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyId", "static-policyid");
+		ReflectionTestUtils.setField(policyUtil, "staticSubscriberId", "static-subscriberid");
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyJson",
+				"{\"typeOfShare\":\"\",\"transactionsAllowed\":\"2\"," +
+						"\"shareDomain\":\"datashare.datashare\",\"encryptionType\":\"NONE\",\"source\":\"\",\"validForInMinutes\":\"30\"}");
 		DataShareDto dataShareDto = new DataShareDto();
 		dataShareDto.setTypeOfShare("");
 		dataShareDto.setTransactionsAllowed("2");
