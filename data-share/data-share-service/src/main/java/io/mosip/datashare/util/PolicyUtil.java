@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import io.mosip.datashare.dto.DataShareDto;
 import jakarta.annotation.PostConstruct;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -162,11 +163,11 @@ public class PolicyUtil {
 			return;
 		}
 		LOGGER.info("Application is running in standalone mode");
-		if (Objects.isNull(staticPolicyId))
+		if (StringUtils.isEmpty(staticPolicyId))
 			throw new PolicyException("Please configure the static data share policy Id");
-		if (Objects.isNull(staticSubscriberId))
+		if (StringUtils.isEmpty(staticSubscriberId))
 			throw new PolicyException("Please configure the static data share subscriber Id");
-		if (Objects.isNull(staticPolicyJson))
+		if (StringUtils.isEmpty(staticPolicyJson))
 			throw new PolicyException("Please configure the static data share policy");
 	}
 }
