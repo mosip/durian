@@ -1,0 +1,16 @@
+istio:
+  enabled: true
+  gateway:
+    enabled: false
+    gateway_name: internal
+    selector:
+      istio: ingressgateway-internal
+    servers:
+      - port:
+          name: http
+          number: 80
+          protocol: HTTP
+  vs:
+    prefix: /v1/datashare
+    gateways:
+      - istio-system/internal
