@@ -417,19 +417,17 @@ istio:
   enabled: true
   gateway:
     enabled: false
-    gateway_name: datashare-inji-gateway
     selector:
       istio: ingressgateway-internal
     servers:
       - hosts:
-          - datashare-inji.sandbox.xyz.net
+          - api-internal.sandbox.xyz.net
         port:
           name: http
           number: 80
           protocol: HTTP
   vs:
-    prefix: /v1/datashare-injiweb
-    rewrite: /v1/datashare
+    prefix: /v1/datashare
+    rewrite: ''
     gateways:
       - istio-system/internal
-      - datashare-inji-gateway
