@@ -21,7 +21,7 @@ function installing_datashare() {
   ./copy_cm.sh
 
   echo Installing datashare
-  helm -n $NS install datashare mosip/datashare --version $CHART_VERSION
+  helm -n $NS install datashare mosip/datashare -f values.yaml --version $CHART_VERSION
 
   kubectl -n $NS  get deploy -o name |  xargs -n1 -t  kubectl -n $NS rollout status
   return 0
