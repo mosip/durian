@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import io.mosip.datashare.dto.DataShareDto;
+import io.mosip.datashare.service.impl.DataShareServiceImpl;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -134,7 +135,7 @@ public class PolicyUtil {
 	 * @param subscriberId Subscriber Id from request
 	 * @return the DataShareDto object
 	 */
-	public DataShareDto getStaticDataSharePolicy(String policyId, String subscriberId) {
+	public DataShareDto getStaticDataSharePolicy(String policyId, String subscriberId, String transactionsAllowed) {
 		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 				policyId, "PolicyUtil::getStaticDataSharePolicy()::entry");
 		try {
@@ -142,6 +143,14 @@ public class PolicyUtil {
 				throw new PolicyException("Either Policy Id or Subscriber Id not matching with configured in system");
 
 			DataShareDto dataShareDto = mapper.readValue(staticPolicyJson, DataShareDto.class);
+			/* transactionAllowed attribute from request will be taken precedence
+				over the configured in static data share policy */
+			if(StringUtils.isNotEmpty(transactionsAllowed)) {
+				validateTransactionAllowed(transactionsAllowed);
+				LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+						"Overriding the transactionAllowed configured in static data share policy : " + transactionsAllowed);
+				dataShareDto.setTransactionsAllowed(transactionsAllowed);
+			}
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 					"PolicyUtil::getStaticDataSharePolicy()::exit");
 			return dataShareDto;
@@ -152,6 +161,17 @@ public class PolicyUtil {
 			if(e instanceof PolicyException)
 				throw (PolicyException)e;
 			throw new PolicyException(e);
+		}
+	}
+
+	private void validateTransactionAllowed(String transactionsAllowed) {
+		try {
+				int transactions = Integer.parseInt(transactionsAllowed);
+				if(transactions < DataShareServiceImpl.UNLIMITED_TRANSACTION_ALLOWED)
+					throw new PolicyException("transactionsAllowed must not be less than " +
+							DataShareServiceImpl.UNLIMITED_TRANSACTION_ALLOWED);
+		} catch (NumberFormatException e) {
+			throw new PolicyException("transactionsAllowed must be number");
 		}
 	}
 

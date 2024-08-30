@@ -88,7 +88,7 @@ public class DataShareControllerTest {
     public void testDataShareSuccess() throws Exception {
         DataShare dataShare=new DataShare();
         doReturn(dataShare).when(dataShareService).createDataShare(Mockito.anyString(), Mockito.anyString(),
-                Mockito.any(MultipartFile.class));
+                Mockito.any(MultipartFile.class), Mockito.anyString());
         String sample = "Test";
         Mockito.when(env.getProperty("mosip.data.share.datetime.pattern"))
                 .thenReturn("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");

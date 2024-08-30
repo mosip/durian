@@ -158,7 +158,7 @@ public class PolicyUtilTest {
 		ReflectionTestUtils.setField(policyUtil, "staticPolicyId", "static-policyid");
 		ReflectionTestUtils.setField(policyUtil, "staticSubscriberId", "static-subscriberid");
 		Exception exception = assertThrows(PolicyException.class, () -> {
-			policyUtil.getStaticDataSharePolicy("1234", "static-subscriberid");
+			policyUtil.getStaticDataSharePolicy("1234", "static-subscriberid", null);
 		});
 		assertTrue(exception.getMessage().contains("DAT-SER-007"));
 	}
@@ -168,7 +168,7 @@ public class PolicyUtilTest {
 		ReflectionTestUtils.setField(policyUtil, "staticPolicyId", "static-policyid");
 		ReflectionTestUtils.setField(policyUtil, "staticSubscriberId", "static-subscriberid");
 		Exception exception = assertThrows(PolicyException.class, () -> {
-			policyUtil.getStaticDataSharePolicy("static-policyid", "1234");
+			policyUtil.getStaticDataSharePolicy("static-policyid", "1234", null);
 		});
 		assertTrue(exception.getMessage().contains("DAT-SER-007"));
 	}
@@ -183,7 +183,7 @@ public class PolicyUtilTest {
 		Mockito.when(objectMapper.readValue(Mockito.anyString(), Mockito.any(Class.class))).
 				thenThrow(new JsonParseException("Exception"));
 		Exception exception = assertThrows(PolicyException.class, () -> {
-			policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid");
+			policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid", null);
 		});
 		assertTrue(exception.getMessage().contains("DAT-SER-007"));
 	}
@@ -205,7 +205,51 @@ public class PolicyUtilTest {
 		dataShareDto.setValidForInMinutes("30");
 		Mockito.when(objectMapper.readValue(Mockito.anyString(), Mockito.any(Class.class))).
 				thenReturn(dataShareDto);
-		DataShareDto response = policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid");
+		DataShareDto response = policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid", null);
 		assertEquals(dataShareDto.getEncryptionType(), response.getEncryptionType());
 	}
+
+	@Test
+	public void getStaticDateSharePolicyWithTransactionAllowedSuccessTest() throws JsonProcessingException {
+		ReflectionTestUtils.setField(policyUtil, "standaloneModeEnabled", true);
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyId", "static-policyid");
+		ReflectionTestUtils.setField(policyUtil, "staticSubscriberId", "static-subscriberid");
+		ReflectionTestUtils.setField(policyUtil, "staticPolicyJson",
+				"{\"typeOfShare\":\"\",\"transactionsAllowed\":\"2\"," +
+						"\"shareDomain\":\"datashare.datashare\",\"encryptionType\":\"NONE\",\"source\":\"\",\"validForInMinutes\":\"30\"}");
+		DataShareDto dataShareDto = new DataShareDto();
+		dataShareDto.setTypeOfShare("");
+		dataShareDto.setTransactionsAllowed("2");
+		dataShareDto.setShareDomain("datashare.datashare");
+		dataShareDto.setEncryptionType("NONE");
+		dataShareDto.setSource("");
+		dataShareDto.setValidForInMinutes("30");
+		Mockito.when(objectMapper.readValue(Mockito.anyString(), Mockito.any(Class.class))).
+				thenReturn(dataShareDto);
+		String transactionAllowed = "10";
+		DataShareDto response = policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid", transactionAllowed);
+		assertEquals(response.getTransactionsAllowed(), transactionAllowed);
+	}
+
+	@Test(expected = PolicyException.class)
+	public void validateTransactionAllowedWithInvalidValue() {
+		String transactionAllowed = "abc";
+		ReflectionTestUtils.invokeMethod(policyUtil,
+				"validateTransactionAllowed", transactionAllowed);
+	}
+
+	@Test(expected = PolicyException.class)
+	public void validateTransactionAllowedWithValueLessThanOne() {
+		String transactionAllowed = "-2";
+		ReflectionTestUtils.invokeMethod(policyUtil,
+				"validateTransactionAllowed", transactionAllowed);
+	}
+
+	@Test
+	public void validateTransactionAllowedWithValidValue() {
+		String transactionAllowed = "10";
+		ReflectionTestUtils.invokeMethod(policyUtil,
+				"validateTransactionAllowed", transactionAllowed);
+	}
+
 }
