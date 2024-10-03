@@ -226,30 +226,37 @@ public class PolicyUtilTest {
 		dataShareDto.setValidForInMinutes("30");
 		Mockito.when(objectMapper.readValue(Mockito.anyString(), Mockito.any(Class.class))).
 				thenReturn(dataShareDto);
-		String transactionAllowed = "10";
-		DataShareDto response = policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid", transactionAllowed);
-		assertEquals(response.getTransactionsAllowed(), transactionAllowed);
+		String usageCountForStandaloneMode = "10";
+		DataShareDto response = policyUtil.getStaticDataSharePolicy("static-policyid", "static-subscriberid", usageCountForStandaloneMode);
+		assertEquals(response.getTransactionsAllowed(), usageCountForStandaloneMode);
 	}
 
 	@Test(expected = PolicyException.class)
-	public void validateTransactionAllowedWithInvalidValue() {
-		String transactionAllowed = "abc";
+	public void validateUsageCountForStandaloneModeWithInvalidValue() {
+		String usageCountForStandaloneMode = "abc";
 		ReflectionTestUtils.invokeMethod(policyUtil,
-				"validateTransactionAllowed", transactionAllowed);
+				"validateUsageCountForStandaloneMode", usageCountForStandaloneMode);
 	}
 
 	@Test(expected = PolicyException.class)
-	public void validateTransactionAllowedWithValueLessThanOne() {
-		String transactionAllowed = "-2";
+	public void validateUsageCountForStandaloneModeWithZero() {
+		String usageCountForStandaloneMode = "0";
 		ReflectionTestUtils.invokeMethod(policyUtil,
-				"validateTransactionAllowed", transactionAllowed);
+				"validateUsageCountForStandaloneMode", usageCountForStandaloneMode);
+	}
+
+	@Test(expected = PolicyException.class)
+	public void validateUsageCountForStandaloneModeWithValueLessThanOne() {
+		String usageCountForStandaloneMode = "-2";
+		ReflectionTestUtils.invokeMethod(policyUtil,
+				"validateUsageCountForStandaloneMode", usageCountForStandaloneMode);
 	}
 
 	@Test
-	public void validateTransactionAllowedWithValidValue() {
-		String transactionAllowed = "10";
+	public void validateUsageCountForStandaloneModeWithValidValue() {
+		String usageCountForStandaloneMode = "10";
 		ReflectionTestUtils.invokeMethod(policyUtil,
-				"validateTransactionAllowed", transactionAllowed);
+				"validateUsageCountForStandaloneMode", usageCountForStandaloneMode);
 	}
 
 }

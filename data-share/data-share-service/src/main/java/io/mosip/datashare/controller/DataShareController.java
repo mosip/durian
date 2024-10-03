@@ -73,10 +73,10 @@ public class DataShareController {
 			@ApiResponse(responseCode = "404", description = "Not Found" ,content = @Content(schema = @Schema(hidden = true)))})
 	public ResponseEntity<Object> createDataShare(@RequestBody MultipartFile file,
 			@PathVariable("policyId") String policyId, @PathVariable("subscriberId") String subscriberId,
-			@Parameter(description = "Number of allowed transaction in standalone mode") @RequestParam(required = false, name = "transactionsAllowed") String transactionsAllowed) {
+			@Parameter(description = "Usage count for standalone mode") @RequestParam(required = false, name = "usageCountForStandaloneMode") String usageCountForStandaloneMode) {
 
 
-		DataShare dataShare = dataShareService.createDataShare(policyId, subscriberId, file, transactionsAllowed);
+		DataShare dataShare = dataShareService.createDataShare(policyId, subscriberId, file, usageCountForStandaloneMode);
 		return ResponseEntity.status(HttpStatus.OK)
 				.body(buildDataShareResponse(dataShare));
 
