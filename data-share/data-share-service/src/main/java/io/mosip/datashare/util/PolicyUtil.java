@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import io.mosip.datashare.dto.DataShareDto;
+import io.mosip.datashare.service.impl.DataShareServiceImpl;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -132,9 +133,10 @@ public class PolicyUtil {
 	 * Provides static data share policy for sharing the data.
 	 * @param policyId Policy Id from request
 	 * @param subscriberId Subscriber Id from request
+	 * @param usageCountForStandaloneMode Usage count for standalone mode from request
 	 * @return the DataShareDto object
 	 */
-	public DataShareDto getStaticDataSharePolicy(String policyId, String subscriberId) {
+	public DataShareDto getStaticDataSharePolicy(String policyId, String subscriberId, String usageCountForStandaloneMode) {
 		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 				policyId, "PolicyUtil::getStaticDataSharePolicy()::entry");
 		try {
@@ -142,6 +144,14 @@ public class PolicyUtil {
 				throw new PolicyException("Either Policy Id or Subscriber Id not matching with configured in system");
 
 			DataShareDto dataShareDto = mapper.readValue(staticPolicyJson, DataShareDto.class);
+			/* usageCountForStandaloneMode attribute from request will take precedence
+				over the transactionAllowed configured in static data share policy in standalone mode */
+			if(StringUtils.isNotEmpty(usageCountForStandaloneMode)) {
+				validateUsageCountForStandaloneMode(usageCountForStandaloneMode);
+				LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+						"Overriding the transactionAllowed configured in static data share policy : " + usageCountForStandaloneMode);
+				dataShareDto.setTransactionsAllowed(usageCountForStandaloneMode);
+			}
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 					"PolicyUtil::getStaticDataSharePolicy()::exit");
 			return dataShareDto;
@@ -152,6 +162,17 @@ public class PolicyUtil {
 			if(e instanceof PolicyException)
 				throw (PolicyException)e;
 			throw new PolicyException(e);
+		}
+	}
+
+	private void validateUsageCountForStandaloneMode(String usageCountForStandaloneMode) {
+		try {
+				int usageCount = Integer.parseInt(usageCountForStandaloneMode);
+				if(usageCount == 0 || usageCount < DataShareServiceImpl.UNLIMITED_USAGE_COUNT)
+					throw new PolicyException("usageCountForStandaloneMode must not be 0 or less than " +
+							DataShareServiceImpl.UNLIMITED_USAGE_COUNT);
+		} catch (NumberFormatException e) {
+			throw new PolicyException("usageCountForStandaloneMode must be a number");
 		}
 	}
 
