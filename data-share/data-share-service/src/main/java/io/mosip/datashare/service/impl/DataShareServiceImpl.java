@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -119,9 +120,20 @@ public class DataShareServiceImpl implements DataShareService {
 	@Value("${mosip.data.share.protocol}")
 	private String httpProtocol;
 
+	/** Defines whether static data share policy needs to be used for sharing the data*/
+	@Value("${mosip.data.share.standalone.mode.enabled:false}")
+	private boolean standaloneModeEnabled;
+
+	/** Defines whether JWT signature generation needs to be disabled */
+	@Value("${mosip.data.share.signature.disabled:false}")
+	private boolean isSignatureDisabled;
 
 	/** The Constant DATETIME_PATTERN. */
 	private static final String DATETIME_PATTERN = "mosip.data.share.datetime.pattern";
+
+	/** The constant defines unlimited usage count for the created share */
+	public static final int UNLIMITED_USAGE_COUNT = -1;
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -130,7 +142,8 @@ public class DataShareServiceImpl implements DataShareService {
 	 * java.lang.String, org.springframework.web.multipart.MultipartFile)
 	 */
 	@Override
-	public DataShare createDataShare(String policyId, String subscriberId, MultipartFile file) {
+	public DataShare createDataShare(String policyId, String subscriberId, MultipartFile file,
+									 String usageCountForStandaloneMode) {
 		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 				"DataShareServiceImpl::createDataShare()::entry");
 		DataShare dataShare = new DataShare();
@@ -138,10 +151,17 @@ public class DataShareServiceImpl implements DataShareService {
 			String randomShareKey;
 			try {
 				byte[] fileData = file.getBytes();
-				PolicyResponseDto policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
-
-
-				DataShareDto dataSharePolicy = policyDetailResponse.getPolicies().getDataSharePolicies();
+				DataShareDto dataSharePolicy;
+				LocalDateTime policyPublishDate = null;
+				LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+						"standaloneModeEnabled : " + standaloneModeEnabled + ", isSignatureDisabled : " + isSignatureDisabled);
+				if(!standaloneModeEnabled) {
+					PolicyResponseDto policyDetailResponse = policyUtil.getPolicyDetail(policyId, subscriberId);
+					dataSharePolicy = policyDetailResponse.getPolicies().getDataSharePolicies();
+					policyPublishDate = policyDetailResponse.getPublishDate();
+				} else {
+					dataSharePolicy = policyUtil.getStaticDataSharePolicy(policyId, subscriberId, usageCountForStandaloneMode);
+				}
 				byte[] encryptedData = null;
 				if (PARTNERBASED.equalsIgnoreCase(dataSharePolicy.getEncryptionType())) {
 					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
@@ -162,10 +182,13 @@ public class DataShareServiceImpl implements DataShareService {
 						.toISOString(DateUtils.addMinutes(DateUtils.parseUTCToDate(createShareTime),
 								Integer.parseInt(dataSharePolicy.getValidForInMinutes())));
 
-				String jwtSignature = digitalSignatureUtil.jwtSign(fileData, file.getName(), subscriberId,
-						createShareTime, expiryTime);
-				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, policyDetailResponse,
-						jwtSignature);
+				String jwtSignature = "";
+				if(!isSignatureDisabled) {
+					jwtSignature = digitalSignatureUtil.jwtSign(fileData, file.getName(), subscriberId,
+							createShareTime, expiryTime);
+				}
+				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, dataSharePolicy,
+						jwtSignature, policyPublishDate);
 				randomShareKey = storefile(aclMap, new ByteArrayInputStream(encryptedData), policyId, subscriberId);
 				String dataShareUrl = constructURL(randomShareKey, dataSharePolicy, policyId,
 						subscriberId);
@@ -312,6 +335,12 @@ public class DataShareServiceImpl implements DataShareService {
 				LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 						"Successfully update the metadata");
 			}
+			/* Unlimited usage is allowed hence not updating the metadata*/
+			if(transactionAllowed == UNLIMITED_USAGE_COUNT) {
+				isDataShareAllow = true;
+				LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+						"Unlimited usage of data share is configured hence not updating metadata");
+			}
 
 		}
 		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
@@ -325,17 +354,18 @@ public class DataShareServiceImpl implements DataShareService {
 	 *
 	 * @param subscriberId         the subscriber id
 	 * @param policyId             the policy id
-	 * @param policyDetailResponse the policy detail response
+	 * @param dataSharePolicies    the data share policies
+	 * @param jwtSignature 		   the jwt signature for shared object
+	 * @param policyPublishDate 		   the policy publish date
 	 * @return the map
 	 */
 	private Map<String, Object> prepareMetaData(String subscriberId, String policyId,
-			PolicyResponseDto policyResponseDto, String jwtSignature) {
+												DataShareDto dataSharePolicies, String jwtSignature, LocalDateTime policyPublishDate) {
 
-		DataShareDto dataSharePolicies = policyResponseDto.getPolicies().getDataSharePolicies();
 		Map<String, Object> aclMap = new HashMap<>();
 
 		aclMap.put("policyid", policyId);
-		aclMap.put("policypublishdate", policyResponseDto.getPublishDate());
+		aclMap.put("policypublishdate", policyPublishDate);
 		aclMap.put("subscriberId", subscriberId);
 		aclMap.put("validforinminutes", dataSharePolicies.getValidForInMinutes());
 		aclMap.put("transactionsallowed", dataSharePolicies.getTransactionsAllowed());

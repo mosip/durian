@@ -12,8 +12,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.amazonaws.services.dynamodbv2.xspec.M;
 import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
+import io.mosip.datashare.exception.PolicyException;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -162,14 +162,14 @@ public class DataShareServiceImplTest {
 		policyResponseDto.setPolicies(policyAttributesDto);
 		Mockito.when(policyUtil.getPolicyDetail(Mockito.anyString(), Mockito.anyString()))
 				.thenReturn(policyResponseDto);
-		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
+		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile, null);
 		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
 	}
 
 	@Test
 	public void createDataShareSuccessTest() {
 
-		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
+		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile, null);
 		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
 	}
 
@@ -177,14 +177,14 @@ public class DataShareServiceImplTest {
 	public void createDataShareSuccesswithShortUrlTest() {
 		Mockito.when(env.getProperty("mosip.data.share.key.length")).thenReturn("8");
 		ReflectionTestUtils.setField(dataShareServiceImpl, "isShortUrl", true);
-		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
+		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile, null);
 		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
 	}
 
 	@Test(expected = FileException.class)
 	public void fileExceptionTest() {
 		multiPartFile=null;
-		dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile);
+		dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile, null);
 	}
 
 	@Test
@@ -240,5 +240,62 @@ public class DataShareServiceImplTest {
 	public void getDataFileDataShareNotFoundExceptionTest() {
 		Mockito.doThrow(new ObjectStoreAdapterException(OBJECT_STORE_NOT_ACCESSIBLE.getErrorCode(), OBJECT_STORE_NOT_ACCESSIBLE.getErrorMessage(), new Throwable())).when(objectStoreAdapter).getObject(Mockito.anyString(),Mockito.anyString(),Mockito.any(),Mockito.any(),Mockito.anyString());
 		dataShareServiceImpl.getDataFile("12dfsdff");
+	}
+
+	@Test
+	public void createStaticDataShareSuccessTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "standaloneModeEnabled", true);
+		DataShareDto dataShareDto = new DataShareDto();
+		dataShareDto.setTypeOfShare("");
+		dataShareDto.setTransactionsAllowed("2");
+		dataShareDto.setShareDomain("datashare.datashare");
+		dataShareDto.setEncryptionType("NONE");
+		dataShareDto.setSource("");
+		dataShareDto.setValidForInMinutes("30");
+		Mockito.when(policyUtil.getStaticDataSharePolicy(Mockito.anyString(), Mockito.anyString(), Mockito.isNull()))
+				.thenReturn(dataShareDto);
+		String policyId = "static-policyid";
+		String subscriberId = "static-subscriberid";
+		DataShare dataShare = dataShareServiceImpl.createDataShare(policyId, subscriberId, multiPartFile, null);
+		assertEquals("Data Share created successfully", policyId, dataShare.getPolicyId());
+	}
+
+	@Test(expected = PolicyException.class)
+	public void createStaticDataSharePolicyExceptionTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "standaloneModeEnabled", true);
+		Mockito.doThrow(new PolicyException()).
+				when(policyUtil).getStaticDataSharePolicy(Mockito.anyString(), Mockito.anyString(), Mockito.isNull());
+		dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile, null);
+	}
+
+	@Test
+	public void disableSignatureSuccessTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "isSignatureDisabled", true);
+		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile, null);
+		Mockito.verify(digitalSignatureUtil, Mockito.never()).jwtSign(Mockito.any(),
+				Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
+	}
+
+	@Test
+	public void enableSignatureSuccessTest() {
+		ReflectionTestUtils.setField(dataShareServiceImpl, "isSignatureDisabled", false);
+		DataShare dataShare = dataShareServiceImpl.createDataShare(POLICY_ID, SUBSCRIBER_ID, multiPartFile, null);
+		Mockito.verify(digitalSignatureUtil, Mockito.atLeastOnce()).jwtSign(Mockito.any(),
+				Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), Mockito.anyString());
+		assertEquals("Data Share created successfully", POLICY_ID, dataShare.getPolicyId());
+	}
+
+	@Test
+	public void getDataFileWithUnlimitedUsageSuccessTest() {
+		metaDataMap = new HashMap<String, Object>();
+		metaDataMap.put("transactionsallowed", "-1");
+		Mockito.when(objectStoreAdapter.getMetaData(Mockito.anyString(), Mockito.anyString(), Mockito.any(),
+				Mockito.any(), Mockito.anyString()
+		)).thenReturn(metaDataMap);
+		dataShareServiceImpl.getDataFile(POLICY_ID, SUBSCRIBER_ID, "12dfsdff");
+		Mockito.verify(objectStoreAdapter, Mockito.never()).decMetadata(Mockito.anyString(),
+				Mockito.anyString(), Mockito.anyString(), Mockito.anyString(),
+				Mockito.anyString(), Mockito.anyString());
 	}
 }

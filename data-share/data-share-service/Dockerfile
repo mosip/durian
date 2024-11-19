@@ -1,4 +1,4 @@
-FROM openjdk:11
+FROM eclipse-temurin:21-jre-alpine
 
 ARG SOURCE
 ARG COMMIT_HASH
@@ -12,13 +12,13 @@ LABEL build_time=${BUILD_TIME}
 # can be passed during Docker build as build time environment for github branch to pickup configuration from.
 ARG spring_config_label
 
-# can be passed during Docker build as build time environment for spring profiles active 
+# can be passed during Docker build as build time environment for spring profiles active
 ARG active_profile
 
-# can be passed during Docker build as build time environment for config server URL 
+# can be passed during Docker build as build time environment for config server URL
 ARG spring_config_url
 
-# can be passed during Docker build as build time environment for glowroot 
+# can be passed during Docker build as build time environment for glowroot
 ARG is_glowroot
 
 # can be passed during Docker build as build time environment for artifactory URL
@@ -48,16 +48,16 @@ ARG container_user=mosip
 ARG container_user_group=mosip
 
 # can be passed during Docker build as build time environment for github branch to pickup configuration from.
-ARG container_user_uid=1001
+ARG container_user_uid=1002
 
 # can be passed during Docker build as build time environment for github branch to pickup configuration from.
 ARG container_user_gid=1001
 
 # install packages and create user
-RUN apt-get -y update \
-&& apt-get install -y unzip \
-&& groupadd -g ${container_user_gid} ${container_user_group} \
-&& useradd -u ${container_user_uid} -g ${container_user_group} -s /bin/sh -m ${container_user}
+RUN apk -q update \
+&& apk add -q unzip \
+&& addgroup -g ${container_user_gid} ${container_user_group} \
+&& adduser -s /bin/sh -u ${container_user_uid} -G ${container_user_group} -h /home/${container_user} --disabled-password ${container_user}
 
 # set working directory for the user
 WORKDIR /home/${container_user}

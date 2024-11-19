@@ -19,9 +19,11 @@ public interface DataShareService {
 	 * @param policyId     the policy id
 	 * @param subscriberId the subscriber id
 	 * @param file         the file
+	 * @param usageCountForStandaloneMode  the usage count for standalone mode
 	 * @return the data share
 	 */
-	public DataShare createDataShare(String policyId, String subscriberId, MultipartFile file);
+	public DataShare createDataShare(String policyId, String subscriberId,
+									 MultipartFile file, String usageCountForStandaloneMode);
 
 	/**
 	 * Gets the data file.

@@ -1,0 +1,6 @@
+# Datashare
+
+## Install
+```
+./install.sh
+```

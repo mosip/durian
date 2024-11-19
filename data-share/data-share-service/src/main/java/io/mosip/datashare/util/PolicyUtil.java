@@ -3,7 +3,12 @@ package io.mosip.datashare.util;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
+import io.mosip.datashare.dto.DataShareDto;
+import io.mosip.datashare.service.impl.DataShareServiceImpl;
+import jakarta.annotation.PostConstruct;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -50,6 +55,22 @@ public class PolicyUtil {
 	@Autowired
 	private ObjectMapper mapper;
 
+	/** Defines whether static data share policy needs to be used for sharing the data*/
+	@Value("${mosip.data.share.standalone.mode.enabled:false}")
+	private boolean standaloneModeEnabled;
+
+	/** The static data share policy Json used for sharing the data. */
+	@Value("${mosip.data.share.static-policy.policy-json:#{null}}")
+	private String staticPolicyJson;
+
+	/** The static data share policyId used for sharing the data. */
+	@Value("${mosip.data.share.static-policy.policy-id:#{null}}")
+	private String staticPolicyId;
+
+	/** The static data share subscriberId used for sharing the data. */
+	@Value("${mosip.data.share.static-policy.subscriber-id:#{null}}")
+		private String staticSubscriberId;
+
 	@Cacheable(value = "partnerpolicyCache", key = "#policyId + '_' + #subscriberId")
 	public PolicyResponseDto getPolicyDetail(String policyId, String subscriberId) {
 
@@ -60,14 +81,17 @@ public class PolicyUtil {
 			pathsegments.put("partnerId", subscriberId);
 			pathsegments.put("policyId", policyId);
 			String responseString = restUtil.getApi(ApiName.PARTNER_POLICY, pathsegments, String.class);
+            PolicyResponseDto policyResponseDto=new PolicyResponseDto();
+            PolicyManagerResponseDto responseObject = mapper.readValue(responseString,
+                        PolicyManagerResponseDto.class);
+            if (responseObject!=null) {
+                if (responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
+                    ServiceError error = responseObject.getErrors().get(0);
+                    throw new PolicyException(error.getMessage());
+                }
+                policyResponseDto = responseObject.getResponse();
+            }
 
-			PolicyManagerResponseDto responseObject = mapper.readValue(responseString,
-					PolicyManagerResponseDto.class);
-			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
-				ServiceError error = responseObject.getErrors().get(0);
-				throw new PolicyException(error.getMessage());
-			}
-			PolicyResponseDto policyResponseDto = responseObject.getResponse();
 			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 					policyId,
 					"Fetched policy details successfully");
@@ -105,4 +129,66 @@ public class PolicyUtil {
 
 	}
 
+	/**
+	 * Provides static data share policy for sharing the data.
+	 * @param policyId Policy Id from request
+	 * @param subscriberId Subscriber Id from request
+	 * @param usageCountForStandaloneMode Usage count for standalone mode from request
+	 * @return the DataShareDto object
+	 */
+	public DataShareDto getStaticDataSharePolicy(String policyId, String subscriberId, String usageCountForStandaloneMode) {
+		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+				policyId, "PolicyUtil::getStaticDataSharePolicy()::entry");
+		try {
+			if (!policyId.equals(staticPolicyId) || !subscriberId.equals(staticSubscriberId))
+				throw new PolicyException("Either Policy Id or Subscriber Id not matching with configured in system");
+
+			DataShareDto dataShareDto = mapper.readValue(staticPolicyJson, DataShareDto.class);
+			/* usageCountForStandaloneMode attribute from request will take precedence
+				over the transactionAllowed configured in static data share policy in standalone mode */
+			if(StringUtils.isNotEmpty(usageCountForStandaloneMode)) {
+				validateUsageCountForStandaloneMode(usageCountForStandaloneMode);
+				LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+						"Overriding the transactionAllowed configured in static data share policy : " + usageCountForStandaloneMode);
+				dataShareDto.setTransactionsAllowed(usageCountForStandaloneMode);
+			}
+			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+					"PolicyUtil::getStaticDataSharePolicy()::exit");
+			return dataShareDto;
+		} catch (Exception e) {
+			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+					policyId,
+					"PolicyUtil::getStaticDataSharePolicy():: error with error message" + ExceptionUtils.getStackTrace(e));
+			if(e instanceof PolicyException)
+				throw (PolicyException)e;
+			throw new PolicyException(e);
+		}
+	}
+
+	private void validateUsageCountForStandaloneMode(String usageCountForStandaloneMode) {
+		try {
+				int usageCount = Integer.parseInt(usageCountForStandaloneMode);
+				if(usageCount == 0 || usageCount < DataShareServiceImpl.UNLIMITED_USAGE_COUNT)
+					throw new PolicyException("usageCountForStandaloneMode must not be 0 or less than " +
+							DataShareServiceImpl.UNLIMITED_USAGE_COUNT);
+		} catch (NumberFormatException e) {
+			throw new PolicyException("usageCountForStandaloneMode must be a number");
+		}
+	}
+
+	/** This method validates the properties configured for the standalone mode for the data-share application.*/
+	@PostConstruct
+	private void validateStandaloneDataShareProperties() {
+		if(!standaloneModeEnabled) {
+			LOGGER.info("Application is running in integrated mode");
+			return;
+		}
+		LOGGER.info("Application is running in standalone mode");
+		if (StringUtils.isEmpty(staticPolicyId))
+			throw new PolicyException("Please configure the static data share policy Id");
+		if (StringUtils.isEmpty(staticSubscriberId))
+			throw new PolicyException("Please configure the static data share subscriber Id");
+		if (StringUtils.isEmpty(staticPolicyJson))
+			throw new PolicyException("Please configure the static data share policy");
+	}
 }
