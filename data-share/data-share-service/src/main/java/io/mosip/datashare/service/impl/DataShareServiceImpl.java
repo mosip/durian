@@ -130,6 +130,10 @@ public class DataShareServiceImpl implements DataShareService {
 
 	/** The Constant DATETIME_PATTERN. */
 	private static final String DATETIME_PATTERN = "mosip.data.share.datetime.pattern";
+
+	/** The constant defines unlimited usage count for the created share */
+	public static final int UNLIMITED_USAGE_COUNT = -1;
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -138,7 +142,8 @@ public class DataShareServiceImpl implements DataShareService {
 	 * java.lang.String, org.springframework.web.multipart.MultipartFile)
 	 */
 	@Override
-	public DataShare createDataShare(String policyId, String subscriberId, MultipartFile file) {
+	public DataShare createDataShare(String policyId, String subscriberId, MultipartFile file,
+									 String usageCountForStandaloneMode) {
 		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 				"DataShareServiceImpl::createDataShare()::entry");
 		DataShare dataShare = new DataShare();
@@ -155,7 +160,7 @@ public class DataShareServiceImpl implements DataShareService {
 					dataSharePolicy = policyDetailResponse.getPolicies().getDataSharePolicies();
 					policyPublishDate = policyDetailResponse.getPublishDate();
 				} else {
-					dataSharePolicy = policyUtil.getStaticDataSharePolicy(policyId, subscriberId);
+					dataSharePolicy = policyUtil.getStaticDataSharePolicy(policyId, subscriberId, usageCountForStandaloneMode);
 				}
 				byte[] encryptedData = null;
 				if (PARTNERBASED.equalsIgnoreCase(dataSharePolicy.getEncryptionType())) {
@@ -329,6 +334,12 @@ public class DataShareServiceImpl implements DataShareService {
 						"transactionsallowed");
 				LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 						"Successfully update the metadata");
+			}
+			/* Unlimited usage is allowed hence not updating the metadata*/
+			if(transactionAllowed == UNLIMITED_USAGE_COUNT) {
+				isDataShareAllow = true;
+				LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
+						"Unlimited usage of data share is configured hence not updating metadata");
 			}
 
 		}
