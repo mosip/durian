@@ -23,7 +23,7 @@ on:
 
 jobs:
   build-maven-data-share:
-    uses: prafulrakhade/kattu/.github/workflows/maven-build.yml@master-java21
+    uses: mosip/kattu/.github/workflows/maven-build.yml@master-java21
     with:
       SERVICE_LOCATION: ./
       BUILD_ARTIFACT: data-share
