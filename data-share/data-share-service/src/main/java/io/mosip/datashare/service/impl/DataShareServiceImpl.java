@@ -299,11 +299,11 @@ public class DataShareServiceImpl implements DataShareService {
 			throw new DataShareNotFoundException();
 		}else {
 			dataShareGetResponse.setSignature((String) metaDataMap.get(SIGNATURE));
-			int transactionAllowed = Integer.parseInt((String) metaDataMap.get(TRANSACTIONSALLOWED));
+			int transactionAllowed = metaDataMap.get(TRANSACTIONSALLOWED) != null ? Integer.parseInt((String) metaDataMap.get(TRANSACTIONSALLOWED)) : 0;
 			if(transactionAllowed >= 1) {
 				isDataShareAllow=true;
-				objectStoreAdapter.decMetadata(subcriberId, policyId, null, null, randomShareKey,
-						"transactionsallowed");
+				metaDataMap.put(TRANSACTIONSALLOWED, transactionAllowed- 1);
+				objectStoreAdapter.addObjectMetaData(subcriberId, policyId, null, null, randomShareKey, metaDataMap);
 				LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 						"Successfully update the metadata");
 			}

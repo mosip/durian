@@ -18,10 +18,10 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.TrustStrategy;
+import org.springframework.beans.factory.annotation.Value;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -55,6 +55,14 @@ import io.mosip.kernel.core.util.TokenHandlerUtil;
  */
 @Component
 public class RestUtil {
+
+	@Value("${data.share.default.resttemplate.httpclient.connections.max.per.host:20}")
+	private int maxConnectionPerRoute;
+
+	@Value("${data.share.default.resttemplate.httpclient.connections.max:100}")
+	private int totalMaxConnection;
+
+	private RestTemplate restTemplate;
 
 	/** The environment. */
     @Autowired
@@ -216,9 +224,11 @@ public class RestUtil {
 			SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
 					.loadTrustMaterial(null, acceptingTrustStrategy).build();
 			SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-			CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(csf).build();
+			HttpClientBuilder httpClientBuilder = HttpClients.custom().setMaxConnPerRoute(maxConnectionPerRoute)
+					.setMaxConnTotal(totalMaxConnection).setSSLSocketFactory(csf).disableCookieManagement();
 			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-			requestFactory.setHttpClient(httpClient);
+
+			requestFactory.setHttpClient(httpClientBuilder.build());
 			localRestTemplate = new RestTemplate(requestFactory);
 		}
 		return localRestTemplate;
