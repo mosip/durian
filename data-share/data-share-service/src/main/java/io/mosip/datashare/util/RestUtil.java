@@ -56,13 +56,11 @@ import io.mosip.kernel.core.util.TokenHandlerUtil;
 @Component
 public class RestUtil {
 
-	@Value("${data.share.default.resttemplate.httpclient.connections.max.per.host:20}")
+	@Value("${mosip.data.share.restTemplate.max-connection-per-route:20}")
 	private int maxConnectionPerRoute;
 
-	@Value("${data.share.default.resttemplate.httpclient.connections.max:100}")
+	@Value("${mosip.data.share.restTemplate.total-max-connections:100}")
 	private int totalMaxConnection;
-
-	private RestTemplate restTemplate;
 
 	/** The environment. */
     @Autowired
@@ -70,6 +68,7 @@ public class RestUtil {
 
 	/** The Constant AUTHORIZATION. */
     private static final String AUTHORIZATION = "Authorization=";
+
 	private RestTemplate localRestTemplate;
 
 	@PostConstruct
@@ -225,7 +224,7 @@ public class RestUtil {
 					.loadTrustMaterial(null, acceptingTrustStrategy).build();
 			SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
 			HttpClientBuilder httpClientBuilder = HttpClients.custom().setMaxConnPerRoute(maxConnectionPerRoute)
-					.setMaxConnTotal(totalMaxConnection).setSSLSocketFactory(csf).disableCookieManagement();
+					.setMaxConnTotal(totalMaxConnection).setSSLSocketFactory(csf);
 			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
 
 			requestFactory.setHttpClient(httpClientBuilder.build());
