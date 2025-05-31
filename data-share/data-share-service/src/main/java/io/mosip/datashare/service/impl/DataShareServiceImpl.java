@@ -299,7 +299,7 @@ public class DataShareServiceImpl implements DataShareService {
 			throw new DataShareNotFoundException();
 		}else {
 			dataShareGetResponse.setSignature((String) metaDataMap.get(SIGNATURE));
-			int transactionAllowed = metaDataMap.get(TRANSACTIONSALLOWED) != null ? Integer.parseInt((String) metaDataMap.get(TRANSACTIONSALLOWED)) : 0;
+			int transactionAllowed = Integer.parseInt((String) metaDataMap.get(TRANSACTIONSALLOWED));
 			if(transactionAllowed >= 1) {
 				isDataShareAllow=true;
 				metaDataMap.put(TRANSACTIONSALLOWED, transactionAllowed- 1);
