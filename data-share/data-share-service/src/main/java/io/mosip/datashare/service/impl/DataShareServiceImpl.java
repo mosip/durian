@@ -136,7 +136,7 @@ public class DataShareServiceImpl implements DataShareService {
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see
 	 * io.mosip.datashare.service.DataShareService#createDataShare(java.lang.String,
 	 * java.lang.String, org.springframework.web.multipart.MultipartFile)
@@ -175,7 +175,7 @@ public class DataShareServiceImpl implements DataShareService {
 							policyId, subscriberId + "Without encryption" + dataSharePolicy.getEncryptionType());
 
 				}
-
+				
 				String createShareTime = DateUtils
 						.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN));
 				String expiryTime = DateUtils
@@ -262,7 +262,7 @@ public class DataShareServiceImpl implements DataShareService {
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see
 	 * io.mosip.datashare.service.DataShareService#getDataFile(java.lang.String)
 	 */
@@ -408,7 +408,7 @@ public class DataShareServiceImpl implements DataShareService {
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see
 	 * io.mosip.datashare.service.DataShareService#getDataFile(java.lang.String)
 	 */
@@ -417,7 +417,7 @@ public class DataShareServiceImpl implements DataShareService {
 		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.KEY.toString(), shortUrlKey,
 				"DataShareServiceImpl::getDataFile()");
 		String data = cacheUtil.getShortUrlData(shortUrlKey, null, null, null);
-
+		
 		if (data != null && !data.isEmpty()) {
 			String[] datas = data.split(",");
 			if (datas != null && datas.length == 3) {
