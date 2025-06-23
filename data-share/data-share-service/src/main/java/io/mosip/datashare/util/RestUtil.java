@@ -12,23 +12,24 @@ import java.util.Optional;
 
 import jakarta.annotation.PostConstruct;
 import javax.net.ssl.SSLContext;
-import javax.swing.text.html.Option;
 
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
-import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.ssl.TrustStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -63,9 +64,16 @@ public class RestUtil {
     private static final String AUTHORIZATION = "Authorization=";
     private RestTemplate localRestTemplate;
     @PostConstruct
-    private void loadRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    private void loadRestTemplate() throws Exception {
         localRestTemplate = getRestTemplate();
     }
+
+    @Value("${mosip.data.share.restTemplate.max-connection-per-route:20}")
+    private int maxConnectionPerRoute;
+
+    @Value("${mosip.data.share.restTemplate.total-max-connections:100}")
+    private int totalMaxConnection;
+
     /**
      * Post api.
      *
@@ -187,17 +195,28 @@ public class RestUtil {
      * @throws NoSuchAlgorithmException the no such algorithm exception
      * @throws KeyStoreException        the key store exception
      */
-    public RestTemplate getRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    public RestTemplate getRestTemplate() throws Exception {
         if (localRestTemplate == null) {
             TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
-            SSLContext sslContext = SSLContexts.custom()
-                    .loadTrustMaterial(null, acceptingTrustStrategy).build();
+
+            SSLContext sslContext = SSLContextBuilder.create()
+                    .loadTrustMaterial(null, acceptingTrustStrategy)
+                    .build();
+
             SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-            HttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create().setSSLSocketFactory(csf).build();
-//			CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(csf).build();
-            CloseableHttpClient httpClient = HttpClients.custom().setConnectionManager(connectionManager).build();
-            HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-            requestFactory.setHttpClient(httpClient);
+
+            PoolingHttpClientConnectionManager connectionManager =
+                    PoolingHttpClientConnectionManagerBuilder.create()
+                            .setSSLSocketFactory(csf)
+                            .setMaxConnPerRoute(maxConnectionPerRoute)
+                            .setMaxConnTotal(totalMaxConnection)
+                            .build();
+
+            CloseableHttpClient httpClient = HttpClients.custom()
+                    .setConnectionManager(connectionManager)
+                    .build();
+
+            HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
             localRestTemplate = new RestTemplate(requestFactory);
         }
         return localRestTemplate;
