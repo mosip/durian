@@ -17,6 +17,7 @@ import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.client5.http.ssl.SSLConnectionSocketFactory;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -199,18 +200,12 @@ public class RestUtil {
         if (localRestTemplate == null) {
             TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
 
-            SSLContext sslContext = SSLContextBuilder.create()
-                    .loadTrustMaterial(null, acceptingTrustStrategy)
-                    .build();
+            SSLContext sslContext = SSLContexts.custom()
+                    .loadTrustMaterial(null, acceptingTrustStrategy).build();
 
             SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
 
-            PoolingHttpClientConnectionManager connectionManager =
-                    PoolingHttpClientConnectionManagerBuilder.create()
-                            .setSSLSocketFactory(csf)
-                            .setMaxConnPerRoute(maxConnectionPerRoute)
-                            .setMaxConnTotal(totalMaxConnection)
-                            .build();
+            HttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder.create().setSSLSocketFactory(csf).setMaxConnPerRoute(maxConnectionPerRoute).setMaxConnTotal(totalMaxConnection).build();
 
             CloseableHttpClient httpClient = HttpClients.custom()
                     .setConnectionManager(connectionManager)
