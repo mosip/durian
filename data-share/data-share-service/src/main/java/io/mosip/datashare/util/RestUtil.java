@@ -64,7 +64,7 @@ public class RestUtil {
     private static final String AUTHORIZATION = "Authorization=";
     private RestTemplate localRestTemplate;
     @PostConstruct
-    private void loadRestTemplate() throws Exception {
+    private void loadRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
         localRestTemplate = getRestTemplate();
     }
 
