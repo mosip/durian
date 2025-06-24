@@ -195,7 +195,7 @@ public class RestUtil {
      * @throws NoSuchAlgorithmException the no such algorithm exception
      * @throws KeyStoreException        the key store exception
      */
-    public RestTemplate getRestTemplate() throws Exception {
+    public RestTemplate getRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
         if (localRestTemplate == null) {
             TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
 
