@@ -330,8 +330,8 @@ public class DataShareServiceImpl implements DataShareService {
 			int transactionAllowed = Integer.parseInt((String) metaDataMap.get(TRANSACTIONSALLOWED));
 			if(transactionAllowed >= 1) {
 				isDataShareAllow=true;
-				objectStoreAdapter.decMetadata(subcriberId, policyId, null, null, randomShareKey,
-						"transactionsallowed");
+				metaDataMap.put(TRANSACTIONSALLOWED, transactionAllowed- 1);
+				objectStoreAdapter.addObjectMetaData(subcriberId, policyId, null, null, randomShareKey, metaDataMap);
 				LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(), policyId,
 						"Successfully update the metadata");
 			}
