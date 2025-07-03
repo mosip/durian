@@ -251,8 +251,8 @@
 
 								</configuration>
 							</execution>
+							<!-- Integration test shutdown -->
 							<execution>
-								<!-- Integration test shutdown -->
 								<id>post-integration-test</id>
 								<phase>post-integration-test</phase>
 								<goals>
