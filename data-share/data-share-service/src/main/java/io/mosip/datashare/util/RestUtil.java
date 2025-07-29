@@ -1,35 +1,16 @@
 package io.mosip.datashare.util;
 import java.io.IOException;
 import java.net.URI;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.X509Certificate;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
-import javax.net.ssl.SSLContext;
-
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.TrustStrategy;
-import org.springframework.beans.factory.annotation.Value;
-import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -37,17 +18,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.google.gson.Gson;
-
 import io.mosip.datashare.constant.ApiName;
-import io.mosip.datashare.dto.Metadata;
-import io.mosip.datashare.dto.PasswordRequest;
-import io.mosip.datashare.dto.SecretKeyRequest;
-import io.mosip.datashare.dto.TokenRequestDTO;
 import io.mosip.datashare.exception.ApiNotAccessibleException;
-import io.mosip.kernel.core.util.DateUtils;
-import io.mosip.kernel.core.util.StringUtils;
-import io.mosip.kernel.core.util.TokenHandlerUtil;
 
 
 /**
@@ -56,32 +28,13 @@ import io.mosip.kernel.core.util.TokenHandlerUtil;
 @Component
 public class RestUtil {
 
-	@Value("${mosip.data.share.restTemplate.max-connection-per-route:20}")
-	private int maxConnectionPerRoute;
 
-	@Value("${mosip.data.share.restTemplate.total-max-connections:100}")
-	private int totalMaxConnection;
-
-	@Value("${rest.connect.timeout:3000}")
-	private int connectTimeout;
-
-	@Value("${rest.read.timeout:5000}")
-	private int readTimeout;
-
-
-	/** The environment. */
+    /** The environment. */
     @Autowired
     private Environment environment;
 
-	/** The Constant AUTHORIZATION. */
-    private static final String AUTHORIZATION = "Authorization=";
-
-	private RestTemplate localRestTemplate;
-
-	@PostConstruct
-	private void loadRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
-		localRestTemplate = getRestTemplate();
-	}
+	@Autowired
+	private RestTemplate restTemplate;
 
 	/**
 	 * Post api.
@@ -125,9 +78,8 @@ public class RestUtil {
 			}
 
         try {
-            localRestTemplate = getRestTemplate();
-				result = (T) localRestTemplate.postForObject(builder.toUriString(), setRequestHeader(requestType, mediaType),
-						responseClass);
+			result = (T) restTemplate.postForObject(
+					builder.toUriString(), setRequestHeader(requestType, mediaType), responseClass);
 
         } catch (Exception e) {
             throw new ApiNotAccessibleException(e);
@@ -180,10 +132,8 @@ public class RestUtil {
 			uriComponents = builder.build(false).encode();
 
         try {
-            localRestTemplate = getRestTemplate();
-				result = (T) localRestTemplate
-						.exchange(uriComponents.toUri(), HttpMethod.GET, setRequestHeader(null, null), responseType)
-                    .getBody();
+			result = (T) restTemplate.exchange(
+					uriComponents.toUri(), HttpMethod.GET, setRequestHeader(null, null), responseType).getBody();
         } catch (Exception e) {
             throw new ApiNotAccessibleException(e);
         }
@@ -206,9 +156,9 @@ public class RestUtil {
 			URI urlWithPath = builder.build(pathsegments);
 
 			try {
-				localRestTemplate = getRestTemplate();
-				result = (T) localRestTemplate
-						.exchange(urlWithPath, HttpMethod.GET, setRequestHeader(null, null), responseType).getBody();
+				result = (T) restTemplate.exchange(
+						builder.build(pathsegments), HttpMethod.GET, setRequestHeader(null, null), responseType
+				).getBody();
 			} catch (Exception e) {
 				throw new Exception(e);
 			}
@@ -216,34 +166,8 @@ public class RestUtil {
 		}
 		return result;
 	}
-	/**
-	 * Gets the rest template.
-	 *
-	 * @return the rest template
-	 * @throws KeyManagementException   the key management exception
-	 * @throws NoSuchAlgorithmException the no such algorithm exception
-	 * @throws KeyStoreException        the key store exception
-	 */
-    public RestTemplate getRestTemplate() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
-    	if (localRestTemplate == null) {
-			TrustStrategy acceptingTrustStrategy = (X509Certificate[] chain, String authType) -> true;
-			SSLContext sslContext = org.apache.http.ssl.SSLContexts.custom()
-					.loadTrustMaterial(null, acceptingTrustStrategy).build();
-			SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
-			HttpClientBuilder httpClientBuilder = HttpClients.custom().setMaxConnPerRoute(maxConnectionPerRoute)
-					.setMaxConnTotal(totalMaxConnection).setSSLSocketFactory(csf);
-			
-			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
-			requestFactory.setConnectTimeout(connectTimeout);
-			requestFactory.setReadTimeout(readTimeout);
 
-			requestFactory.setHttpClient(httpClientBuilder.build());
-			localRestTemplate = new RestTemplate(requestFactory);
-		}
-		return localRestTemplate;
-    }
-
-	/**
+    /**
 	 * Sets the request header.
 	 *
 	 * @param requestType the request type
@@ -253,7 +177,6 @@ public class RestUtil {
 	 */
     private HttpEntity<Object> setRequestHeader(Object requestType, MediaType mediaType) throws IOException {
         MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
-        headers.add("Cookie", getToken());
         if (mediaType != null) {
             headers.add("Content-Type", mediaType.toString());
         }
@@ -275,82 +198,4 @@ public class RestUtil {
             return new HttpEntity<Object>(headers);
     }
 
-	/**
-	 * Gets the token.
-	 *
-	 * @return the token
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 */
-    public String getToken() throws IOException {
-        String token = System.getProperty("token");
-        boolean isValid = false;
-
-        if (StringUtils.isNotEmpty(token)) {
-
-			isValid = TokenHandlerUtil.isValidBearerToken(token,
-					environment.getProperty("data.share.token.request.issuerUrl"),
-					environment.getProperty("data.share.token.request.clientId"));
-
-
-        }
-        if (!isValid) {
-            TokenRequestDTO<SecretKeyRequest> tokenRequestDTO = new TokenRequestDTO<SecretKeyRequest>();
-			tokenRequestDTO.setId(environment.getProperty("data.share.token.request.id"));
-            tokenRequestDTO.setMetadata(new Metadata());
-
-            tokenRequestDTO.setRequesttime(DateUtils.getUTCCurrentDateTimeString());
-            // tokenRequestDTO.setRequest(setPasswordRequestDTO());
-            tokenRequestDTO.setRequest(setSecretKeyRequestDTO());
-			tokenRequestDTO.setVersion(environment.getProperty("data.share.token.request.version"));
-
-            Gson gson = new Gson();
-            HttpClient httpClient = HttpClientBuilder.create().build();
-            // HttpPost post = new
-            // HttpPost(environment.getProperty("PASSWORDBASEDTOKENAPI"));
-            HttpPost post = new HttpPost(environment.getProperty("KEYBASEDTOKENAPI"));
-            try {
-                StringEntity postingString = new StringEntity(gson.toJson(tokenRequestDTO));
-                post.setEntity(postingString);
-                post.setHeader("Content-type", "application/json");
-                HttpResponse response = httpClient.execute(post);
-                org.apache.http.HttpEntity entity = response.getEntity();
-                String responseBody = EntityUtils.toString(entity, "UTF-8");
-                Header[] cookie = response.getHeaders("Set-Cookie");
-                if (cookie.length == 0)
-                    throw new IOException("cookie is empty. Could not generate new token.");
-                token = response.getHeaders("Set-Cookie")[0].getValue();
-                System.setProperty("token", token.substring(14, token.indexOf(';')));
-                return token.substring(0, token.indexOf(';'));
-            } catch (IOException e) {
-                throw e;
-            }
-        }
-        return AUTHORIZATION + token;
-    }
-
-	/**
-	 * Sets the secret key request DTO.
-	 *
-	 * @return the secret key request
-	 */
-    private SecretKeyRequest setSecretKeyRequestDTO() {
-        SecretKeyRequest request = new SecretKeyRequest();
-		request.setAppId(environment.getProperty("data.share.token.request.appid"));
-		request.setClientId(environment.getProperty("data.share.token.request.clientId"));
-		request.setSecretKey(environment.getProperty("data.share.token.request.secretKey"));
-        return request;
-    }
-
-	/**
-	 * Sets the password request DTO.
-	 *
-	 * @return the password request
-	 */
-    private PasswordRequest setPasswordRequestDTO() {
-        PasswordRequest request = new PasswordRequest();
-		request.setAppId(environment.getProperty("data.share.token.request.appid"));
-		request.setPassword(environment.getProperty("data.share.token.request.password"));
-		request.setUserName(environment.getProperty("data.share.token.request.username"));
-        return request;
-    }
 }
