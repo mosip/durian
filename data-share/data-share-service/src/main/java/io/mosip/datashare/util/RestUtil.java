@@ -62,6 +62,13 @@ public class RestUtil {
 	@Value("${mosip.data.share.restTemplate.total-max-connections:100}")
 	private int totalMaxConnection;
 
+	@Value("${rest.connect.timeout:3000}")
+	private int connectTimeout;
+
+	@Value("${rest.read.timeout:5000}")
+	private int readTimeout;
+
+
 	/** The environment. */
     @Autowired
     private Environment environment;
@@ -225,7 +232,10 @@ public class RestUtil {
 			SSLConnectionSocketFactory csf = new SSLConnectionSocketFactory(sslContext);
 			HttpClientBuilder httpClientBuilder = HttpClients.custom().setMaxConnPerRoute(maxConnectionPerRoute)
 					.setMaxConnTotal(totalMaxConnection).setSSLSocketFactory(csf);
+			
 			HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
+			requestFactory.setConnectTimeout(connectTimeout);
+			requestFactory.setReadTimeout(readTimeout);
 
 			requestFactory.setHttpClient(httpClientBuilder.build());
 			localRestTemplate = new RestTemplate(requestFactory);
