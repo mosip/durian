@@ -34,6 +34,7 @@
         <swagger.version>2.9.2</swagger.version>
         <kernel.core.version>1.2.0.1</kernel.core.version>
         <kernel.logger.logback.version>1.2.0.1</kernel.logger.logback.version>
+	    <kernel.object.store.version>1.2.0.2</kernel.object.store.version>
         <powermock.beta.version>2.0.7</powermock.beta.version>
 		<mockito.version>2.28.2</mockito.version>
 		<kernel.object.store.version>1.2.0.1</kernel.object.store.version>
@@ -199,3 +200,4 @@
 		</profile>
 	</profiles>
 </project>
+
