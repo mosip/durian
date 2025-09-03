@@ -87,7 +87,7 @@
 			<version>${kernel.logger.logback.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>io.mosip.commons.</groupId>
+			<groupId>io.mosip.commons</groupId>
 			<artifactId>khazana</artifactId>
 			<version>${kernel.object.store.version}</version>
 		</dependency>
