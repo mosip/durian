@@ -1,6 +1,6 @@
 # Durian 
-[![Maven Package upon a push](https://github.com/mosip/durian/actions/workflows/push_trigger.yml/badge.svg?branch=release-1.2.0.1)](https://github.com/mosip/durian/actions/workflows/push_trigger.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?branch=release-1.2.0.1&project=mosip_durian&metric=alert_status)](https://sonarcloud.io/dashboard?branch=release-1.2.0.1&id=mosip_durian)
+[![Maven Package upon a push](https://github.com/mosip/durian/actions/workflows/push-trigger.yml/badge.svg?branch=release-1.2.0.x)](https://github.com/mosip/durian/actions/workflows/push-trigger.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?branch=release-1.2.0.x&project=mosip_durian&metric=alert_status)](https://sonarcloud.io/dashboard?branch=release-1.2.0.x&id=mosip_durian)
 
 ## Overview
 Refer to [MOSIP docs](https://docs.mosip.io/1.2.0/modules/datashare).
