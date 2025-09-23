@@ -70,15 +70,15 @@ public class DigitalSignatureUtilTest {
 		jwtSign.setJwtSignedData(data);
 		signResponseDto.setResponse(jwtSign);
 		jwtsignResponse = "{\r\n" +
-    		"  \"id\": \"string\",\r\n" + 
-    		"  \"version\": \"string\",\r\n" + 
-    		"  \"responsetime\": \"2020-07-28T10:06:31.530Z\",\r\n" + 
-    		"  \"metadata\": null,\r\n" + 
-    		"  \"response\": {\r\n" + 
-				"    \"jwtSignedData\": \"testdata\",\r\n" + 
-    		"    \"timestamp\": \"2020-07-28T10:06:31.502Z\"\r\n" + 
-    		"  },\r\n" + 
-    		"  \"errors\": null\r\n" + 
+				"  \"id\": \"string\",\r\n" +
+				"  \"version\": \"string\",\r\n" +
+				"  \"responsetime\": \"2020-07-28T10:06:31.530Z\",\r\n" +
+				"  \"metadata\": null,\r\n" +
+				"  \"response\": {\r\n" +
+				"    \"jwtSignedData\": \"testdata\",\r\n" +
+				"    \"timestamp\": \"2020-07-28T10:06:31.502Z\"\r\n" +
+				"  },\r\n" +
+				"  \"errors\": null\r\n" +
 				"}";
 
 		Mockito.when(restUtil.postApi(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
@@ -104,10 +104,10 @@ public class DigitalSignatureUtilTest {
 	public void signSuccessTest() throws IOException {
 		String test = "testdata";
 		byte[] sample = test.getBytes();
-		
+
 		String signedData = digitalSignatureUtil.jwtSign(sample, "test", "", "", "");
 		assertEquals(test, signedData);
-		
+
 
 	}
 
