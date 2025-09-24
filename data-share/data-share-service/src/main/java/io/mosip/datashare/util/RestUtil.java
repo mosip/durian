@@ -30,6 +30,7 @@ import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.ssl.TrustStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
@@ -43,16 +44,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
-import com.google.gson.Gson;
 import io.mosip.datashare.constant.ApiName;
-import io.mosip.datashare.dto.Metadata;
-import io.mosip.datashare.dto.PasswordRequest;
-import io.mosip.datashare.dto.SecretKeyRequest;
-import io.mosip.datashare.dto.TokenRequestDTO;
+
 import io.mosip.datashare.exception.ApiNotAccessibleException;
-import io.mosip.kernel.core.util.DateUtils;
-import io.mosip.kernel.core.util.StringUtils;
-import io.mosip.kernel.core.util.TokenHandlerUtil;
 /**
  * @author Sowmya The Class RestUtil.
  */
@@ -63,6 +57,7 @@ public class RestUtil {
     private Environment environment;
 
     @Autowired
+    @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
 
     @Value("${mosip.data.share.restTemplate.max-connection-per-route:20}")
