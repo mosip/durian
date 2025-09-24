@@ -16,6 +16,6 @@ import lombok.Setter;
 public class AuthorizedRolesDTO {
 
 
-    private List<String> postcreatepolicyidsubscriberid;
+    private List<String> postcreatepolicyIdsubscriberId;
     
 }
