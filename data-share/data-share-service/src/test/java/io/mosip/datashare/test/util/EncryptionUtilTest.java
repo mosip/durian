@@ -3,9 +3,11 @@ package io.mosip.datashare.test.util;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -38,6 +40,7 @@ import io.mosip.datashare.util.EncryptionUtil;
 import io.mosip.datashare.util.RestUtil;
 import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.util.CryptoUtil;
+import org.springframework.test.util.ReflectionTestUtils;
 
 
 @RunWith(PowerMockRunner.class)
@@ -93,6 +96,8 @@ public class EncryptionUtilTest {
 		partnerCertDownloadResponeDto.setCertificateData(test);
 		partnerCertificateResponseObj.setResponse(partnerCertDownloadResponeDto);
 		response = "testdata";
+		ReflectionTestUtils.setField(encryptionUtil, "formatter",
+				DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
 
 		Mockito.when(restUtil.postApi(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
 				Mockito.any(), Mockito.any())).thenReturn(response);
@@ -114,11 +119,13 @@ public class EncryptionUtilTest {
 
 	}
 
-	@Ignore
 	@Test
 	public void encryptionSuccessTest() throws IOException {
 
-
+		ObjectReader mockReader = Mockito.mock(ObjectReader.class);
+		Mockito.when(objectMapper.readerFor(CryptomanagerResponseDto.class)).thenReturn(mockReader);
+		Mockito.when(mockReader.readValue(Mockito.anyString())).thenReturn(cryptomanagerResponseDto);
+		ReflectionTestUtils.setField(encryptionUtil, "cryptoRespReader", mockReader);
 		PowerMockito.mockStatic(CryptoUtil.class);
 		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(test);
 		byte[] encryptedData = encryptionUtil.encryptData(sample, "112");

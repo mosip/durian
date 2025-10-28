@@ -4,9 +4,12 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectReader;
+import io.mosip.datashare.dto.CryptomanagerResponseDto;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -66,6 +69,8 @@ public class DigitalSignatureUtilTest {
 	@Before
 	public void setUp() throws JsonParseException, JsonMappingException, IOException, NoSuchAlgorithmException {
 		ReflectionTestUtils.setField(digitalSignatureUtil, "digestAlg", "SHA256");
+		ReflectionTestUtils.setField(digitalSignatureUtil, "formatter",
+				DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
 		signResponseDto = new SignResponseDto();
 		JWTSignatureResponseDto jwtSign = new JWTSignatureResponseDto();
 		jwtSign.setJwtSignedData(data);
@@ -101,9 +106,12 @@ public class DigitalSignatureUtilTest {
 				.thenReturn(data);
 	}
 
-	@Ignore
 	@Test
 	public void signSuccessTest() throws IOException {
+		ObjectReader mockReader = Mockito.mock(ObjectReader.class);
+		Mockito.when(objectMapper.readerFor(SignResponseDto.class)).thenReturn(mockReader);
+		Mockito.when(mockReader.readValue(Mockito.anyString())).thenReturn(signResponseDto);
+		ReflectionTestUtils.setField(digitalSignatureUtil, "signRespReader", mockReader);
 		String test = "testdata";
 		byte[] sample = test.getBytes();
 
