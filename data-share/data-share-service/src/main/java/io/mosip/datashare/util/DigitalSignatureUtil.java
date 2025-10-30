@@ -36,14 +36,9 @@ import io.mosip.kernel.core.util.CryptoUtil;
 import io.mosip.kernel.core.util.DateUtils;
 import io.mosip.kernel.core.util.HMACUtils2;
 
+
 /**
- * Utility to obtain a JWT signature from Keymanager for a given file payload.
- * <p>Optimizations:
- * <ul>
- *   <li>Uses Spring-managed {@link ObjectMapper} with a cached {@link ObjectReader}</li>
- *   <li>Caches {@link DateTimeFormatter} to avoid repetitive instantiation</li>
- *   <li>Keeps {@link DateUtils#getUTCCurrentDateTimeString(String)} for UTC timestamp generation</li>
- * </ul>
+ * The Class DigitalSignatureUtil.
  */
 @Component
 public class DigitalSignatureUtil {
@@ -124,8 +119,7 @@ public class DigitalSignatureUtil {
 			request.setMetadata(null);
 
 			// Step 2: Generate UTC timestamp in configured pattern
-			final String nowUtcStr = LocalDateTime.now(ZoneOffset.UTC).format(formatter);
-			final LocalDateTime nowUtc = LocalDateTime.parse(nowUtcStr, formatter);
+			final LocalDateTime nowUtc = LocalDateTime.parse(DateUtils.getUTCCurrentDateTimeString(dateTimePattern), formatter);
 			request.setRequesttime(nowUtc);
 
 			// 4) Call Keymanager
@@ -155,8 +149,8 @@ public class DigitalSignatureUtil {
 
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"DigitalSignatureUtil::jwtSign()::exit");
-
 			return signedData;
+
 		} catch (IOException e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"DigitalSignatureUtil::jwtSign():: error with error message" + ExceptionUtils.getStackTrace(e));
@@ -164,42 +158,23 @@ public class DigitalSignatureUtil {
 		} catch (Exception e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"DigitalSignatureUtil::jwtSign():: error with error message" + ExceptionUtils.getStackTrace(e));
-			if (e.getCause() instanceof HttpClientErrorException httpClientException) {
+			if (e.getCause() instanceof HttpClientErrorException) {
+				HttpClientErrorException httpClientException = (HttpClientErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpClientException.getResponseBodyAsString());
-			} else if (e.getCause() instanceof HttpServerErrorException httpServerException) {
+			} else if (e.getCause() instanceof HttpServerErrorException) {
+				HttpServerErrorException httpServerException = (HttpServerErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpServerException.getResponseBodyAsString());
 			} else {
 				throw new SignatureException(e);
 			}
+
 		}
+
 	}
 
-	/**
-	 * Builds a JSON object containing metadata and digest information
-	 * for a file to be signed.
-	 * <p>
-	 * The resulting JSON structure contains the following fields:
-	 * <ul>
-	 *     <li>{@link JsonConstants#FILENAME} – the original filename of the payload</li>
-	 *     <li>{@link JsonConstants#CREATED} – creation timestamp of the payload</li>
-	 *     <li>{@link JsonConstants#EXPIRES} – expiration timestamp for the signature</li>
-	 *     <li>{@link JsonConstants#KEYID} – identifier for the signing key (partner ID)</li>
-	 *     <li>{@link JsonConstants#DIGESTALG} – digest algorithm used to compute the digest</li>
-	 *     <li>{@link JsonConstants#DIGEST} – Base64-encoded digest value of the payload</li>
-	 * </ul>
-	 * This JSON is later serialized and sent to the Keymanager service
-	 * as part of the signature request.
-	 *
-	 * @param filname    the name of the file being signed
-	 * @param partnerId  the partner or key identifier (used as the {@code kid} claim)
-	 * @param digestData Base64-encoded digest value of the file
-	 * @param createTime creation timestamp string (formatted according to the expected pattern)
-	 * @param expiryTime expiration timestamp string (formatted according to the expected pattern)
-	 * @return a {@link JSONObject} containing the signature metadata and digest
-	 */
 	@SuppressWarnings("unchecked")
 	private JSONObject createSignatureJson(String filname, String partnerId, String digestData, String createTime,
-										   String expiryTime) {
+			String expiryTime) {
 		JSONObject json = new JSONObject();
 		json.put(JsonConstants.FILENAME, filname);
 		json.put(JsonConstants.CREATED, createTime);
@@ -209,4 +184,5 @@ public class DigitalSignatureUtil {
 		json.put(JsonConstants.DIGEST, digestData);
 		return json;
 	}
+
 }

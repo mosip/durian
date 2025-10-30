@@ -10,6 +10,7 @@ import java.time.format.DateTimeParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
+import io.mosip.kernel.core.util.DateUtils;
 import jakarta.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,26 +34,7 @@ import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
 
 /**
- * {@code EncryptionUtil} provides a high-level utility for encrypting binary data
- * by invoking the MOSIP Cryptomanager encryption API.
- * <p>
- * This class:
- * <ul>
- *   <li>Prepares a base64-encoded request payload containing the binary data</li>
- *   <li>Populates cryptomanager request metadata such as application ID, reference ID, and timestamp</li>
- *   <li>Submits the request to the configured Cryptomanager endpoint using {@link RestUtil}</li>
- *   <li>Parses the JSON response into a {@link CryptomanagerResponseDto} using a cached {@link ObjectReader}</li>
- *   <li>Validates the response for errors and extracts the encrypted data</li>
- * </ul>
- * <p>
- * <b>Performance Considerations:</b> This class caches the {@link ObjectReader} for
- * {@code CryptomanagerResponseDto} and the {@link DateTimeFormatter} to avoid repetitive
- * object creation and configuration for each request.
- *
- * <p><b>Thread Safety:</b> This class is thread-safe once constructed; cached objects are immutable.
- *
- * @author
- * @since 1.0.0
+ * The Class EncryptionUtil.
  */
 @Component
 public class EncryptionUtil {
@@ -104,25 +86,11 @@ public class EncryptionUtil {
 	}
 
 	/**
-	 * Encrypts the provided binary data using the Cryptomanager encryption API.
-	 * <p>
-	 * This method:
-	 * <ol>
-	 *   <li>Base64-encodes the provided binary data</li>
-	 *   <li>Generates a UTC timestamp formatted per {@code dateTimePattern}</li>
-	 *   <li>Constructs a {@link CryptomanagerRequestDto} with metadata and payload</li>
-	 *   <li>Wraps the request in a {@link RequestWrapper}</li>
-	 *   <li>Sends the request via </li>
-	 *   <li>Parses the response into a {@link CryptomanagerResponseDto}</li>
-	 *   <li>Validates for service errors, throwing {@link DataEncryptionFailureException} if found</li>
-	 *   <li>Extracts the encrypted data as UTF-8 bytes</li>
-	 * </ol>
+	 * Encrypt data.
 	 *
-	 * @param filedata  raw binary data to encrypt
-	 * @param partnerId unique reference ID for the partner or request
-	 * @return encrypted binary data as a byte array
-	 * @throws DataEncryptionFailureException if the encryption API returns an error or data is missing
-	 * @throws ApiNotAccessibleException if the API is unreachable or returns an HTTP error
+	 * @param filedata the filedata
+	 * @param refId    the ref id
+	 * @return the byte[]
 	 */
 	public byte[] encryptData(byte[] filedata, String partnerId) {
 		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
@@ -133,8 +101,7 @@ public class EncryptionUtil {
 			final String dataToBeEncrypted = CryptoUtil.encodeBase64(filedata);
 
 			// Step 2: Generate UTC timestamp in configured pattern
-			final String nowUtcStr = LocalDateTime.now(ZoneOffset.UTC).format(formatter);
-			final LocalDateTime nowUtc = LocalDateTime.parse(nowUtcStr, formatter);
+			final LocalDateTime nowUtc = LocalDateTime.parse(DateUtils.getUTCCurrentDateTimeString(dateTimePattern), formatter);
 
 			// Step 3: Prepare request DTO
 			final CryptomanagerRequestDto body = new CryptomanagerRequestDto();
@@ -186,31 +153,35 @@ public class EncryptionUtil {
 					partnerId, "Encryption done successfully");
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
 					partnerId, "EncryptionUtil::encryptData()::exit");
-
 			return encryptedPacket;
-
 		} catch (IOException e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
-					partnerId, "EncryptionUtil::encryptData():: error " + ExceptionUtils.getStackTrace(e));
+					partnerId,
+					"EncryptionUtil::encryptData():: error with error message" + ExceptionUtils.getStackTrace(e));
 			throw new DataEncryptionFailureException(IO_EXCEPTION, e);
-
 		} catch (DateTimeParseException e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
-					partnerId, "EncryptionUtil::encryptData():: error " + ExceptionUtils.getStackTrace(e));
+					partnerId,
+					"EncryptionUtil::encryptData():: error with error message" + ExceptionUtils.getStackTrace(e));
 			throw new DataEncryptionFailureException(DATE_TIME_EXCEPTION);
-
 		} catch (Exception e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
-					partnerId, "EncryptionUtil::encryptData():: error " + ExceptionUtils.getStackTrace(e));
-
-			final Throwable cause = e.getCause();
-			if (cause instanceof HttpClientErrorException httpClientException) {
+					partnerId,
+					"EncryptionUtil::encryptData():: error with error message" + ExceptionUtils.getStackTrace(e));
+			if (e.getCause() instanceof HttpClientErrorException) {
+				HttpClientErrorException httpClientException = (HttpClientErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpClientException.getResponseBodyAsString());
-			} else if (cause instanceof HttpServerErrorException httpServerException) {
+			} else if (e.getCause() instanceof HttpServerErrorException) {
+				HttpServerErrorException httpServerException = (HttpServerErrorException) e.getCause();
 				throw new ApiNotAccessibleException(httpServerException.getResponseBodyAsString());
-			} else {
+			}
+			 else {
 				throw new DataEncryptionFailureException(e.getMessage());
 			}
+
 		}
-	}
+
+    }
+
+
 }

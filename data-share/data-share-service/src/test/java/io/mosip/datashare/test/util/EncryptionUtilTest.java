@@ -98,7 +98,8 @@ public class EncryptionUtilTest {
 		response = "testdata";
 		ReflectionTestUtils.setField(encryptionUtil, "formatter",
 				DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
-
+		ReflectionTestUtils.setField(encryptionUtil, "dateTimePattern",
+				"yyyy-MM-dd'T'HH:mm:ss");
 		Mockito.when(restUtil.postApi(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
 				Mockito.any(), Mockito.any())).thenReturn(response);
 		Mockito.when(restUtil.getApi(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(response);

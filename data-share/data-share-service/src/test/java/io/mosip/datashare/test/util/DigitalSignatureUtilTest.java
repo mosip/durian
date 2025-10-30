@@ -71,6 +71,8 @@ public class DigitalSignatureUtilTest {
 		ReflectionTestUtils.setField(digitalSignatureUtil, "digestAlg", "SHA256");
 		ReflectionTestUtils.setField(digitalSignatureUtil, "formatter",
 				DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+		ReflectionTestUtils.setField(digitalSignatureUtil, "dateTimePattern",
+				"yyyy-MM-dd'T'HH:mm:ss");
 		signResponseDto = new SignResponseDto();
 		JWTSignatureResponseDto jwtSign = new JWTSignatureResponseDto();
 		jwtSign.setJwtSignedData(data);
@@ -91,12 +93,6 @@ public class DigitalSignatureUtilTest {
 				Mockito.any(), Mockito.any())).thenReturn(jwtsignResponse);
 
 		Mockito.when(objectMapper.readValue(jwtsignResponse, SignResponseDto.class)).thenReturn(signResponseDto);
-		Mockito.when(environment.getProperty("mosip.data.share.datetime.pattern"))
-				.thenReturn("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-		Mockito.when(environment.getProperty("mosip.data.share.includeCertificateHash"))
-				.thenReturn("false");
-		Mockito.when(environment.getProperty("mosip.data.share.includeCertificate")).thenReturn("false");
-		Mockito.when(environment.getProperty("mosip.data.share.includePayload")).thenReturn("false");
 		PowerMockito.mockStatic(CryptoUtil.class);
 		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(data);
 		PowerMockito.mockStatic(HMACUtils2.class);
