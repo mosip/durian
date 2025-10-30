@@ -48,13 +48,13 @@ public class DigitalSignatureUtil {
 	@Value("${mosip.data.share.datetime.pattern}")
 	private String dateTimePattern;
 
-	@Value("${mosip.data.share.includeCertificateHash:false}")
+	@Value("${mosip.data.share.includeCertificateHash}")
 	private boolean includeCertificateHash;
 
-	@Value("${mosip.data.share.includeCertificate:false}")
+	@Value("${mosip.data.share.includeCertificate}")
 	private boolean includeCertificate;
 
-	@Value("${mosip.data.share.includePayload:false}")
+	@Value("${mosip.data.share.includePayload}")
 	private boolean includePayload;
 
 	@Value("${mosip.data.share.certificateurl:}")
@@ -94,58 +94,37 @@ public class DigitalSignatureUtil {
 		try {
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"DigitalSignatureUtil::jwtSign()::entry");
+			String hashData = HMACUtils2.digestAsPlainText(file);
+			String digestData = CryptoUtil.encodeBase64(hashData.getBytes());
 
-			// 1) Compute digest
-			final String hashData = HMACUtils2.digestAsPlainText(file);
-			final String digestData = CryptoUtil.encodeBase64(hashData.getBytes(StandardCharsets.UTF_8));
-
-			// 2) Build signature JSON
-			final JSONObject signatureJson = createSignatureJson(filname, partnerId, digestData, creationTime, expiryTime);
-			final String dataTobeSigned = mapper.writeValueAsString(signatureJson);
-			final String encodedData = CryptoUtil.encodeBase64(dataTobeSigned.getBytes(StandardCharsets.UTF_8));
-
-			// 3) Prepare request
-			final JWTSignatureRequestDto dto = new JWTSignatureRequestDto();
+			JSONObject signatureJson = createSignatureJson(filname, partnerId, digestData, creationTime, expiryTime);
+			String dataTobeSigned = mapper.writeValueAsString(signatureJson);
+			String encodedData = CryptoUtil.encodeBase64(dataTobeSigned.getBytes());
+			JWTSignatureRequestDto dto = new JWTSignatureRequestDto();
 			dto.setDataToSign(encodedData);
 			dto.setIncludeCertHash(includeCertificateHash);
 			dto.setIncludeCertificate(includeCertificate);
 			dto.setIncludePayload(includePayload);
-			if (StringUtils.isNotBlank(certificateUrl)) {
+			if (StringUtils.isNotEmpty(certificateUrl)) {
 				dto.setCertificateUrl(certificateUrl);
 			}
 
-			final RequestWrapper<JWTSignatureRequestDto> request = new RequestWrapper<>();
+			RequestWrapper<JWTSignatureRequestDto> request = new RequestWrapper<>();
 			request.setRequest(dto);
 			request.setMetadata(null);
 
 			// Step 2: Generate UTC timestamp in configured pattern
-			final LocalDateTime nowUtc = LocalDateTime.parse(DateUtils.getUTCCurrentDateTimeString(dateTimePattern), formatter);
+			LocalDateTime nowUtc = LocalDateTime.parse(DateUtils.getUTCCurrentDateTimeString(dateTimePattern), formatter);
 			request.setRequesttime(nowUtc);
 
-			// 4) Call Keymanager
-			final String responseString = restUtil.postApi(
-					ApiName.KEYMANAGER_JWTSIGN, null, "", "",
+			String responseString = restUtil.postApi(ApiName.KEYMANAGER_JWTSIGN, null, "", "",
 					MediaType.APPLICATION_JSON, request, String.class);
 
-			if (responseString == null) {
-				throw new IOException("Response body is null");
+			SignResponseDto responseObject = signRespReader.readValue(responseString);			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
+				ServiceError error = responseObject.getErrors().get(0);
+				throw new SignatureException(error.getMessage());
 			}
-
-			// 5) Parse and validate
-			final SignResponseDto responseObject = signRespReader.readValue(responseString);
-
-			if (responseObject == null) {
-				throw new SignatureException("Empty response from Keymanager");
-			}
-			if (responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
-				final ServiceError error = responseObject.getErrors().get(0);
-				throw new SignatureException(error != null ? error.getMessage() : "Unknown signature error");
-			}
-			if (responseObject.getResponse() == null || responseObject.getResponse().getJwtSignedData() == null) {
-				throw new SignatureException("Missing jwtSignedData in response");
-			}
-
-			final String signedData = responseObject.getResponse().getJwtSignedData();
+			String signedData = responseObject.getResponse().getJwtSignedData();
 
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
 					"DigitalSignatureUtil::jwtSign()::exit");

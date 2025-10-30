@@ -96,64 +96,37 @@ public class EncryptionUtil {
 		LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
 				partnerId, "EncryptionUtil::encryptData()::entry");
 
+		String dataToBeEncrypted;
+		byte[] encryptedPacket = null;
 		try {
-			// Step 1: Encode input data
-			final String dataToBeEncrypted = CryptoUtil.encodeBase64(filedata);
 
-			// Step 2: Generate UTC timestamp in configured pattern
-			final LocalDateTime nowUtc = LocalDateTime.parse(DateUtils.getUTCCurrentDateTimeString(dateTimePattern), formatter);
 
-			// Step 3: Prepare request DTO
-			final CryptomanagerRequestDto body = new CryptomanagerRequestDto();
-			body.setApplicationId(applicationId);
-			body.setData(dataToBeEncrypted);
-			body.setReferenceId(partnerId);
-			body.setPrependThumbprint(prependThumbprint);
-			body.setTimeStamp(nowUtc);
+			dataToBeEncrypted = CryptoUtil.encodeBase64(filedata);
+			CryptomanagerRequestDto cryptomanagerRequestDto = new CryptomanagerRequestDto();
+			RequestWrapper<CryptomanagerRequestDto> request = new RequestWrapper<>();
+			cryptomanagerRequestDto.setApplicationId(applicationId);
+			cryptomanagerRequestDto.setData(dataToBeEncrypted);
+			cryptomanagerRequestDto.setReferenceId(partnerId);
+			cryptomanagerRequestDto.setPrependThumbprint(prependThumbprint);
+			LocalDateTime localdatetime = LocalDateTime.parse(DateUtils.getUTCCurrentDateTimeString(dateTimePattern), formatter);
+			request.setRequesttime(localdatetime);
 
-			// Step 4: Wrap request
-			final RequestWrapper<CryptomanagerRequestDto> request = new RequestWrapper<>();
-			request.setRequesttime(nowUtc);
-			request.setRequest(body);
+			request.setRequest(cryptomanagerRequestDto);
+			cryptomanagerRequestDto.setTimeStamp(localdatetime);
+			String response = restUtil.postApi(ApiName.CRYPTOMANAGER_ENCRYPT, null, "", "",
+					MediaType.APPLICATION_JSON, request, String.class);
 
-			// Step 5: Call Cryptomanager API
-			final String response = restUtil.postApi(
-					ApiName.CRYPTOMANAGER_ENCRYPT,
-					null, "", "",
-					MediaType.APPLICATION_JSON,
-					request,
-					String.class
-			);
+			CryptomanagerResponseDto responseObject = cryptoRespReader.readValue(response);
 
-			if (response == null) {
-				throw new IOException("Response body is null");
+			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
+				ServiceError error = responseObject.getErrors().get(0);
+				throw new DataEncryptionFailureException(error.getMessage());
 			}
-
-			// Step 6: Parse response
-			final CryptomanagerResponseDto resp = cryptoRespReader.readValue(response);
-
-			if (resp == null) {
-				throw new DataEncryptionFailureException("Empty response from Cryptomanager");
-			}
-
-			// Step 7: Validate for service errors
-			if (resp.getErrors() != null && !resp.getErrors().isEmpty()) {
-				final ServiceError err = resp.getErrors().get(0);
-				throw new DataEncryptionFailureException(err != null ? err.getMessage() : "Unknown encryption error");
-			}
-
-			if (resp.getResponse() == null || resp.getResponse().getData() == null) {
-				throw new DataEncryptionFailureException("Missing encrypted data in response");
-			}
-
-			// Step 8: Extract encrypted data
-			final byte[] encryptedPacket = resp.getResponse().getData().getBytes(StandardCharsets.UTF_8);
-
-			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
-					partnerId, "Encryption done successfully");
+			encryptedPacket = responseObject.getResponse().getData().getBytes();
+			LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(), partnerId,
+					"Encryption done successfully");
 			LOGGER.debug(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
 					partnerId, "EncryptionUtil::encryptData()::exit");
-			return encryptedPacket;
 		} catch (IOException e) {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
 					partnerId,
@@ -180,6 +153,7 @@ public class EncryptionUtil {
 			}
 
 		}
+		return encryptedPacket;
 
     }
 
