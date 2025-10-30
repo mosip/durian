@@ -120,7 +120,8 @@ public class DigitalSignatureUtil {
 			String responseString = restUtil.postApi(ApiName.KEYMANAGER_JWTSIGN, null, "", "",
 					MediaType.APPLICATION_JSON, request, String.class);
 
-			SignResponseDto responseObject = signRespReader.readValue(responseString);			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
+			SignResponseDto responseObject = signRespReader.readValue(responseString);
+			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
 				ServiceError error = responseObject.getErrors().get(0);
 				throw new SignatureException(error.getMessage());
 			}

@@ -143,7 +143,7 @@ public class RestUtil {
             URI urlWithPath = builder.build(pathsegments);
             try {
                 result = (T) restTemplate.exchange(
-                        builder.build(pathsegments), HttpMethod.GET, setRequestHeader(null, null), responseType
+                        urlWithPath, HttpMethod.GET, setRequestHeader(null, null), responseType
                 ).getBody();
             } catch (Exception e) {
                 throw new Exception(e);
