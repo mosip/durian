@@ -1,20 +1,24 @@
 package io.mosip.datashare.util;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+
+import jakarta.annotation.PostConstruct;
 
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.mosip.datashare.constant.ApiName;
 import io.mosip.datashare.constant.JsonConstants;
@@ -39,33 +43,52 @@ import io.mosip.kernel.core.util.HMACUtils2;
 @Component
 public class DigitalSignatureUtil {
 
-	/** The environment. */
-	@Autowired
-	private Environment environment;
-
-
-	/** The mapper. */
-	@Autowired
-	private ObjectMapper mapper;
-
-	/** The Constant DATETIME_PATTERN. */
-	private static final String DATETIME_PATTERN = "mosip.data.share.datetime.pattern";
-
-
-
 	private static final Logger LOGGER = DataShareLogger.getLogger(DigitalSignatureUtil.class);
 
-	@Autowired
-	private RestUtil restUtil;
+	@Value("${mosip.data.share.datetime.pattern}")
+	private String dateTimePattern;
+
+	@Value("${mosip.data.share.includeCertificateHash}")
+	private boolean includeCertificateHash;
+
+	@Value("${mosip.data.share.includeCertificate}")
+	private boolean includeCertificate;
+
+	@Value("${mosip.data.share.includePayload}")
+	private boolean includePayload;
+
+	@Value("${mosip.data.share.certificateurl:}")
+	private String certificateUrl;
 
 	@Value("${mosip.data.share.digest.algorithm:SHA256}")
 	private String digestAlg;
 
+	@Autowired
+	private RestUtil restUtil;
+
+	@Autowired
+	private ObjectMapper mapper;
+
+	private ObjectReader signRespReader;
+	private DateTimeFormatter formatter;
+
+	@PostConstruct
+	private void init() {
+		this.signRespReader = mapper.readerFor(SignResponseDto.class);
+		this.formatter = DateTimeFormatter.ofPattern(dateTimePattern);
+	}
+
 	/**
-	 * Sign.
+	 * Requests a JWT signature from Keymanager.
 	 *
-	 * @param packet the packet
-	 * @return the byte[]
+	 * @param file         raw file bytes to hash and include in the payload digest
+	 * @param filname      filename to embed in the payload
+	 * @param partnerId    key identifier (kid) / partner ID
+	 * @param creationTime ISO/date-time string for {@code created} claim
+	 * @param expiryTime   ISO/date-time string for {@code expires} claim
+	 * @return compact JWS string
+	 * @throws SignatureException        if Keymanager reports an error or response is invalid
+	 * @throws ApiNotAccessibleException if the API returns an HTTP error body
 	 */
 	public String jwtSign(byte[] file, String filname, String partnerId, String creationTime, String expiryTime) {
 		try {
@@ -79,12 +102,9 @@ public class DigitalSignatureUtil {
 			String encodedData = CryptoUtil.encodeBase64(dataTobeSigned.getBytes());
 			JWTSignatureRequestDto dto = new JWTSignatureRequestDto();
 			dto.setDataToSign(encodedData);
-			dto.setIncludeCertHash(
-					environment.getProperty("mosip.data.share.includeCertificateHash", Boolean.class));
-			dto.setIncludeCertificate(
-					environment.getProperty("mosip.data.share.includeCertificate", Boolean.class));
-			dto.setIncludePayload(environment.getProperty("mosip.data.share.includePayload", Boolean.class));
-			String certificateUrl = environment.getProperty("mosip.data.share.certificateurl");
+			dto.setIncludeCertHash(includeCertificateHash);
+			dto.setIncludeCertificate(includeCertificate);
+			dto.setIncludePayload(includePayload);
 			if (StringUtils.isNotEmpty(certificateUrl)) {
 				dto.setCertificateUrl(certificateUrl);
 			}
@@ -92,14 +112,15 @@ public class DigitalSignatureUtil {
 			RequestWrapper<JWTSignatureRequestDto> request = new RequestWrapper<>();
 			request.setRequest(dto);
 			request.setMetadata(null);
-			DateTimeFormatter format = DateTimeFormatter.ofPattern(environment.getProperty(DATETIME_PATTERN));
-			LocalDateTime localdatetime = LocalDateTime
-					.parse(DateUtils.getUTCCurrentDateTimeString(environment.getProperty(DATETIME_PATTERN)), format);
-			request.setRequesttime(localdatetime);
+
+			// Step 2: Generate UTC timestamp in configured pattern
+			LocalDateTime nowUtc = LocalDateTime.parse(DateUtils.getUTCCurrentDateTimeString(dateTimePattern), formatter);
+			request.setRequesttime(nowUtc);
+
 			String responseString = restUtil.postApi(ApiName.KEYMANAGER_JWTSIGN, null, "", "",
 					MediaType.APPLICATION_JSON, request, String.class);
 
-			SignResponseDto responseObject = mapper.readValue(responseString, SignResponseDto.class);
+			SignResponseDto responseObject = signRespReader.readValue(responseString);
 			if (responseObject != null && responseObject.getErrors() != null && !responseObject.getErrors().isEmpty()) {
 				ServiceError error = responseObject.getErrors().get(0);
 				throw new SignatureException(error.getMessage());
