@@ -38,7 +38,7 @@ import io.mosip.datashare.util.PolicyUtil;
 import io.mosip.kernel.core.exception.ExceptionUtils;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
-import io.mosip.kernel.core.util.DateUtils;
+import io.mosip.kernel.core.util.DateUtils2;
 
 
 
@@ -176,10 +176,10 @@ public class DataShareServiceImpl implements DataShareService {
 
 				}
 				
-				String createShareTime = DateUtils
+				String createShareTime = DateUtils2
 						.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN));
-				String expiryTime = DateUtils
-						.toISOString(DateUtils.addMinutes(DateUtils.parseUTCToDate(createShareTime),
+				String expiryTime = DateUtils2
+						.toISOString(DateUtils2.addMinutes(DateUtils2.parseUTCToDate(createShareTime),
 								Integer.parseInt(dataSharePolicy.getValidForInMinutes())));
 
 				String jwtSignature = "";
