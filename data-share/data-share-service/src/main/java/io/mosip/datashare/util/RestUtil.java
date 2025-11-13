@@ -50,7 +50,7 @@ import io.mosip.datashare.dto.PasswordRequest;
 import io.mosip.datashare.dto.SecretKeyRequest;
 import io.mosip.datashare.dto.TokenRequestDTO;
 import io.mosip.datashare.exception.ApiNotAccessibleException;
-import io.mosip.kernel.core.util.DateUtils;
+import io.mosip.kernel.core.util.DateUtils2;
 import io.mosip.kernel.core.util.StringUtils;
 import io.mosip.kernel.core.util.TokenHandlerUtil;
 /**
@@ -269,7 +269,7 @@ public class RestUtil {
             TokenRequestDTO<SecretKeyRequest> tokenRequestDTO = new TokenRequestDTO<SecretKeyRequest>();
             tokenRequestDTO.setId(environment.getProperty("data.share.token.request.id"));
             tokenRequestDTO.setMetadata(new Metadata());
-            tokenRequestDTO.setRequesttime(DateUtils.getUTCCurrentDateTimeString());
+            tokenRequestDTO.setRequesttime(DateUtils2.getUTCCurrentDateTimeString());
             // tokenRequestDTO.setRequest(setPasswordRequestDTO());
             tokenRequestDTO.setRequest(setSecretKeyRequestDTO());
             tokenRequestDTO.setVersion(environment.getProperty("data.share.token.request.version"));
