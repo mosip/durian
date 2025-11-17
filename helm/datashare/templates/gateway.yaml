@@ -5,7 +5,7 @@ metadata:
   name:  {{ .Release.Name }}
 spec:
   selector:
-    istio: {{ .Values.istio.gateway.selector }}
+{{ toYaml .Values.istio.gateway.selector | indent 4 }}
   servers:
 {{ toYaml .Values.istio.gateway.servers | indent 4 }}
 {{- end }}
