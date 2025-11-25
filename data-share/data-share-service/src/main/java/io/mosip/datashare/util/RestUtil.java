@@ -35,12 +35,6 @@ public class RestUtil {
     @Qualifier("selfTokenRestTemplate")
     private RestTemplate restTemplate;
 
-    @Value("${mosip.data.share.restTemplate.max-connection-per-route:20}")
-    private int maxConnectionPerRoute;
-
-    @Value("${mosip.data.share.restTemplate.total-max-connections:100}")
-    private int totalMaxConnection;
-
     /**
      * Post api.
      *
