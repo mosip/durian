@@ -41,7 +41,7 @@ Homepage: https://github.com/google/gson
 Package: JSON Simple (com.googlecode.json-simple:json-simple)
 Version: Not specified in SBOM
 License: Apache License 2.0 (Inferred from project’s official repository)
-Homepage: https://code.google.com/archive/p/json-simple/
+Homepage: https://github.com/fangyidong/json-simple
 ================================================================================
 
 ================================================================================
@@ -89,7 +89,7 @@ Homepage: https://www.h2database.com
 ================================================================================
 Package: Git Commit ID Maven Plugin
 Version: 3.0.1
-License: Apache License 2.0
+License: GNU Lesser General Public License v3.0 (LGPL-3.0)
 Homepage: https://github.com/git-commit-id/git-commit-id-maven-plugin
 ================================================================================
 
