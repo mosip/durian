@@ -75,7 +75,7 @@ Homepage: https://junit.org
 ================================================================================
 Package: JAXB API (javax.xml.bind:jaxb-api)
 Version: Not specified in SBOM
-License: EPL 2.0 + GPL/CDDL (Dual License)
+License: CDDL 1.1 AND GPL v2 with Classpath Exception (Dual License)
 Homepage: https://eclipse-ee4j.github.io/jaxb-ri/
 ================================================================================
 
