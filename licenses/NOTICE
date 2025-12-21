@@ -1,0 +1,46 @@
+================================================================================
+COPYRIGHT NOTICES
+================================================================================
+
+This software includes third-party components with the following copyrights:
+
+Spring Boot and Related Components:
+Copyright (c) 2012-2024 VMware, Inc. All rights reserved.
+
+Micrometer:
+Copyright (c) 2017-Present VMware, Inc.
+
+SpringDoc OpenAPI:
+Copyright 2019-2025 the original author or authors
+
+Google Gson:
+Copyright 2008 Google Inc.
+
+H2 Database Engine:
+Copyright Thomas Mueller
+
+JUnit:
+Copyright JUnit Team
+
+Mockito:
+Copyright Mockito contributors
+
+PowerMock:
+Copyright 2007-2017 PowerMock Contributors
+
+JAXB API:
+Copyright (c) 1997-2017 Oracle and/or its affiliates
+
+Apache Maven Plugins:
+Copyright The Apache Software Foundation
+
+Git Commit ID Maven Plugin:
+Copyright Konrad Malawski
+
+SonarQube Scanner for Maven:
+Copyright SonarSource SA
+
+Central Publishing Maven Plugin:
+Copyright (c) 2022-present Sonatype, Inc.
+
+================================================================================
