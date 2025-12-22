@@ -32,30 +32,31 @@
             <organizationUrl>https://github.com/mosip/durian</organizationUrl>
         </developer>
     </developers>
-
-    <repositories>
+    <properties>
         <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
         <central.publishing.maven.plugin.version>0.7.0</central.publishing.maven.plugin.version>
-    </repositories>
+    </properties>
 
-    <repository>
-        <id>ossrh-central</id>
-        <name>MavenCentralRepository</name>
-        <url>https://central.sonatype.com/repository/maven-snapshots</url>
-        <layout>default</layout>
-        <snapshots>
-            <enabled>true</enabled>
-        </snapshots>
-    </repository>
-    <repository>
-        <id>central</id>
-        <name>MavenCentral</name>
-        <layout>default</layout>
-        <url>https://repo1.maven.org/maven2</url>
-        <snapshots>
-            <enabled>false</enabled>
-        </snapshots>
-    </repository>
+    <repositories>
+        <repository>
+            <id>ossrh-central</id>
+            <name>MavenCentralRepository</name>
+            <url>https://central.sonatype.com/repository/maven-snapshots</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>central</id>
+            <name>MavenCentral</name>
+            <layout>default</layout>
+            <url>https://repo1.maven.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <distributionManagement>
         <snapshotRepository>
