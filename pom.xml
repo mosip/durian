@@ -18,6 +18,21 @@
         </license>
     </licenses>
 
+        <properties>
+        <!-- Sonar -->
+        <maven.sonar.plugin.version>3.11.0.3922</maven.sonar.plugin.version>
+
+        <sonar.coverage.exclusions>
+            **/constant/**,**/config/**,**/dto/**,**/entity/**,
+            **/exception/**,**/*Config.java,**/*Application.java
+        </sonar.coverage.exclusions>
+
+        <sonar.cpd.exclusions>
+            **/dto/**,**/entity/**,**/config/**
+        </sonar.cpd.exclusions>
+       </properties>
+
+
     <scm>
         <connection>scm:git:git://github.com/mosip/durian.git</connection>
         <developerConnection>scm:git:ssh://github.com:mosip/durian.git</developerConnection>
@@ -180,4 +195,28 @@
     <modules>
         <module>data-share</module>
     </modules>
+        <profiles>
+        <profile>
+            <id>sonar</id>
+
+            <properties>
+                <sonar.sources>.</sonar.sources>
+                <sonar.inclusions>src/main/java/**</sonar.inclusions>
+                <sonar.exclusions>${sonar.coverage.exclusions}</sonar.exclusions>
+                <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+            </properties>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonarsource.scanner.maven</groupId>
+                        <artifactId>sonar-maven-plugin</artifactId>
+                        <version>${maven.sonar.plugin.version}</version>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>
+
