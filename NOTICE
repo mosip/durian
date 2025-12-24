@@ -1,0 +1,47 @@
+MOSIP
+Copyright (c) 2022
+Modular Open Source Identity Platform
+
+This product includes software developed at
+The Apache Software Foundation (https://www.apache.org/).
+
+The following components are licensed under the Apache License 2.0
+and therefore require attribution. Their original NOTICE contents
+are retained as required by the license.
+
+
+===============================================================================
+Apache License 2.0 Components
+===============================================================================
+
+ • Spring Boot (Starter Web, Starter Security, Starter Cache, Starter Data JPA)
+ • Spring Cloud Starter Config
+ • SpringDoc OpenAPI (Starter WebMVC UI, Maven Plugin)
+ • Micrometer (Core, Prometheus Registry)
+ • Gson
+ • JSON Simple
+ • PowerMock (API Mockito2, Module JUnit4)
+
+ • Git Commit ID Maven Plugin (3.0.1)
+ • Central Publishing Maven Plugin (0.7.0)
+
+ • Apache Maven Compiler Plugin (3.11.0)
+ • Apache Maven Source Plugin (2.2.1)
+ • Apache Maven JAR Plugin (3.0.2)
+ • Apache Maven Javadoc Plugin (3.2.0)
+ • Apache Maven WAR Plugin (3.1.0)
+ • Apache Maven GPG Plugin (1.5)
+ • Apache Maven Surefire Plugin (2.22.0)
+
+
+===============================================================================
+Notes
+===============================================================================
+
+Components licensed under MIT (Mockito), EPL (JUnit, JAXB), MPL/EPL
+(H2 Database), GPL/CDDL (JAXB), or other permissive licenses do not
+require attribution in NOTICE.txt. Their license texts are provided
+separately in the LICENSE directory.
+
+Full license texts for all dependencies are available in the `license/`
+directory or from the respective project repositories.
