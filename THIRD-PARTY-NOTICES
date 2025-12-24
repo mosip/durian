@@ -75,14 +75,14 @@ Homepage: https://junit.org
 ================================================================================
 Package: JAXB API (javax.xml.bind:jaxb-api)
 Version: Not specified in SBOM
-License: CDDL 1.1 AND GPL v2 with Classpath Exception (Dual License)
+License: CDDL 1.1
 Homepage: https://eclipse-ee4j.github.io/jaxb-ri/
 ================================================================================
 
 ================================================================================
 Package: H2 Database (com.h2database:h2)
 Version: Not specified in SBOM
-License: EPL 1.0 or MPL 2.0 (Dual License)
+License: MPL 2.0 (Dual License)
 Homepage: https://www.h2database.com
 ================================================================================
 
