@@ -26,6 +26,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 import org.springframework.core.env.Environment;
+import org.springframework.core.task.SyncTaskExecutor;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -97,6 +98,8 @@ public class DataShareServiceImplTest {
 		ReflectionTestUtils.setField(dataShareServiceImpl, "servletPath", "/");
 		ReflectionTestUtils.setField(dataShareServiceImpl, "isShortUrl", false);
 		ReflectionTestUtils.setField(dataShareServiceImpl, "httpProtocol", "https");
+		ReflectionTestUtils.setField(dataShareServiceImpl, "taskExecutor", new SyncTaskExecutor());
+		ReflectionTestUtils.setField(dataShareServiceImpl, "keyLength", 8);
 		Mockito.when(env.getProperty("mosip.data.share.datetime.pattern"))
 				.thenReturn("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 		metaDataMap = new HashMap<String, Object>();

@@ -8,14 +8,18 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.core.env.Environment;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -74,12 +78,25 @@ public class DataShareServiceImpl implements DataShareService {
 	@Autowired
 	private CacheUtil cacheUtil;
 
+	/** Shared executor for parallelising independent per-request operations. */
+	@Autowired
+	@Qualifier("dataShareTaskExecutor")
+	private TaskExecutor taskExecutor;
 
 	/** The Constant KEY_LENGTH. */
 	private static final String KEY_LENGTH = "mosip.data.share.key.length";
 
 	/** The Constant DEFAULT_KEY_LENGTH. */
 	private static final int DEFAULT_KEY_LENGTH = 8;
+
+	/**
+	 * Singleton SecureRandom — thread-safe; avoids per-request OS seeding overhead.
+	 */
+	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
+	/** Key length for random share keys, cached from config at startup. */
+	@Value("${" + KEY_LENGTH + ":8}")
+	private int keyLength;
 
 	/** The Constant IO_EXCEPTION. */
 	private static final String IO_EXCEPTION = "Exception while reading file";
@@ -162,30 +179,50 @@ public class DataShareServiceImpl implements DataShareService {
 				} else {
 					dataSharePolicy = policyUtil.getStaticDataSharePolicy(policyId, subscriberId, usageCountForStandaloneMode);
 				}
-				byte[] encryptedData = null;
-				if (PARTNERBASED.equalsIgnoreCase(dataSharePolicy.getEncryptionType())) {
-					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-							policyId, subscriberId + "encryptionNeeded" + dataSharePolicy.getEncryptionType());
-					encryptedData = encryptionUtil.encryptData(fileData, subscriberId);
-
-				} else if (NONE.equalsIgnoreCase(dataSharePolicy.getEncryptionType())) {
-
-					encryptedData = fileData;
-					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
-							policyId, subscriberId + "Without encryption" + dataSharePolicy.getEncryptionType());
-
-				}
-				
+				// Compute timestamps first (pure CPU, no I/O)
 				String createShareTime = DateUtils2
 						.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN));
 				String expiryTime = DateUtils2
 						.toISOString(DateUtils2.addMinutes(DateUtils2.parseUTCToDate(createShareTime),
 								Integer.parseInt(dataSharePolicy.getValidForInMinutes())));
 
-				String jwtSignature = "";
-				if(!isSignatureDisabled) {
-					jwtSignature = digitalSignatureUtil.jwtSign(fileData, file.getName(), subscriberId,
-							createShareTime, expiryTime);
+				// Launch encryption and JWT signing in parallel — they are independent of each other
+				final String encType = dataSharePolicy.getEncryptionType();
+				final byte[] fd = fileData;
+				final String sid = subscriberId;
+
+				CompletableFuture<byte[]> encryptFuture;
+				if (PARTNERBASED.equalsIgnoreCase(encType)) {
+					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+							policyId, subscriberId + "encryptionNeeded" + encType);
+					encryptFuture = CompletableFuture.supplyAsync(
+							() -> encryptionUtil.encryptData(fd, sid), taskExecutor);
+				} else {
+					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
+							policyId, subscriberId + "Without encryption" + encType);
+					encryptFuture = CompletableFuture.completedFuture(fd);
+				}
+
+				final String cst = createShareTime;
+				final String et = expiryTime;
+				final String fn = file.getName();
+				CompletableFuture<String> signFuture = isSignatureDisabled
+						? CompletableFuture.completedFuture("")
+						: CompletableFuture.supplyAsync(
+								() -> digitalSignatureUtil.jwtSign(fd, fn, sid, cst, et), taskExecutor);
+
+				byte[] encryptedData;
+				String jwtSignature;
+				try {
+					CompletableFuture.allOf(encryptFuture, signFuture).join();
+					encryptedData = encryptFuture.getNow(fd);
+					jwtSignature = signFuture.getNow("");
+				} catch (CompletionException ce) {
+					Throwable cause = ce.getCause();
+					if (cause instanceof RuntimeException) {
+						throw (RuntimeException) cause;
+					}
+					throw new FileException("Async operation failed", new IOException(cause));
 				}
 				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, dataSharePolicy,
 						jwtSignature, policyPublishDate);
@@ -231,12 +268,7 @@ public class DataShareServiceImpl implements DataShareService {
 		String protocol = (dataSharePolicy.getProtocol() != null) ? dataSharePolicy.getProtocol() :HTTP_PROTOCOL ;
 		String url = null;
 		if (isShortUrl) {
-			int length = DEFAULT_KEY_LENGTH;
-			if (env.getProperty(KEY_LENGTH) != null) {
-				length = Integer.parseInt(env.getProperty(KEY_LENGTH));
-			}
-
-			String shortRandomShareKey = generateShortRandomShareKey(length);
+			String shortRandomShareKey = generateShortRandomShareKey(keyLength);
 			cacheUtil.getShortUrlData(shortRandomShareKey, policyId, subscriberId, randomShareKey);
 			url = dataSharePolicy.getShareDomainUrlRead() != null ?
 					dataSharePolicy.getShareDomainUrlRead() +
@@ -388,14 +420,9 @@ public class DataShareServiceImpl implements DataShareService {
 	 */
 	private String storefile(Map<String, Object> metaDataMap, InputStream filedata, String policyId,
 			String subscriberId) {
-		int length = DEFAULT_KEY_LENGTH;
-		if (env.getProperty(KEY_LENGTH) != null) {
-			length = Integer.parseInt(env.getProperty(KEY_LENGTH));
-		}
-
 		String randomShareKey = subscriberId + policyId
 				+ DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now())
-				+ generateShortRandomShareKey(length);
+				+ generateShortRandomShareKey(keyLength);
 		boolean isDataStored = objectStoreAdapter.putObject(subscriberId, policyId, null, null, randomShareKey,
 				filedata);
 		objectStoreAdapter.addObjectMetaData(subscriberId, policyId, null, null, randomShareKey, metaDataMap);
@@ -433,10 +460,9 @@ public class DataShareServiceImpl implements DataShareService {
 
 	}
 
-	private String generateShortRandomShareKey(int byteLength) {
-		SecureRandom secureRandom = new SecureRandom();
+	private static String generateShortRandomShareKey(int byteLength) {
 		byte[] token = new byte[byteLength];
-		secureRandom.nextBytes(token);
+		SECURE_RANDOM.nextBytes(token);
 		return CryptoUtil.encodeToURLSafeBase64(token);
 	}
 
