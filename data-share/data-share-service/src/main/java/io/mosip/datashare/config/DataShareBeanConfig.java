@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import java.util.concurrent.ThreadPoolExecutor;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -25,13 +27,13 @@ import io.mosip.datashare.util.RestUtil;
 @PropertySource("classpath:bootstrap.properties")
 public class DataShareBeanConfig {
 
-	@Value("${mosip.data.share.async.core-pool-size:10}")
+	@Value("${mosip.data.share.async.core-pool-size:25}")
 	private int asyncCorePoolSize;
 
-	@Value("${mosip.data.share.async.max-pool-size:30}")
+	@Value("${mosip.data.share.async.max-pool-size:50}")
 	private int asyncMaxPoolSize;
 
-	@Value("${mosip.data.share.async.queue-capacity:60}")
+	@Value("${mosip.data.share.async.queue-capacity:80}")
 	private int asyncQueueCapacity;
 
 	/**
@@ -45,6 +47,9 @@ public class DataShareBeanConfig {
 		executor.setMaxPoolSize(asyncMaxPoolSize);
 		executor.setQueueCapacity(asyncQueueCapacity);
 		executor.setThreadNamePrefix("datashare-async-");
+		// CallerRunsPolicy: when pool is saturated, run on the calling (Tomcat) thread
+		// instead of rejecting. Gracefully degrades to sequential under extreme load.
+		executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 		executor.initialize();
 		return executor;
 	}
