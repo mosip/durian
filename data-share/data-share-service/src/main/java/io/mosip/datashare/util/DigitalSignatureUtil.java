@@ -1,9 +1,7 @@
 package io.mosip.datashare.util;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +31,7 @@ import io.mosip.kernel.core.exception.ServiceError;
 import io.mosip.kernel.core.http.RequestWrapper;
 import io.mosip.kernel.core.logger.spi.Logger;
 import io.mosip.kernel.core.util.CryptoUtil;
-import io.mosip.kernel.core.util.DateUtils;
+import io.mosip.kernel.core.util.DateUtils2;
 import io.mosip.kernel.core.util.HMACUtils2;
 
 
@@ -114,7 +112,7 @@ public class DigitalSignatureUtil {
 			request.setMetadata(null);
 
 			// Step 2: Generate UTC timestamp in configured pattern
-			LocalDateTime nowUtc = LocalDateTime.parse(DateUtils.getUTCCurrentDateTimeString(dateTimePattern), formatter);
+			LocalDateTime nowUtc = LocalDateTime.parse(DateUtils2.getUTCCurrentDateTimeString(dateTimePattern), formatter);
 			request.setRequesttime(nowUtc);
 
 			String responseString = restUtil.postApi(ApiName.KEYMANAGER_JWTSIGN, null, "", "",
