@@ -17,7 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 
 import io.mosip.datashare.constant.ApiName;
 import io.mosip.datashare.constant.LoggerFileConstant;
@@ -140,10 +141,14 @@ public class EncryptionUtil {
 			LOGGER.error(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.PARTNERID.toString(),
 					partnerId,
 					"EncryptionUtil::encryptData():: error with error message" + ExceptionUtils.getStackTrace(e));
-			if (e.getCause() instanceof WebClientResponseException) {
-				WebClientResponseException wcException = (WebClientResponseException) e.getCause();
-				throw new ApiNotAccessibleException(wcException.getResponseBodyAsString());
-			} else {
+			if (e.getCause() instanceof HttpClientErrorException) {
+				HttpClientErrorException httpClientException = (HttpClientErrorException) e.getCause();
+				throw new ApiNotAccessibleException(httpClientException.getResponseBodyAsString());
+			} else if (e.getCause() instanceof HttpServerErrorException) {
+				HttpServerErrorException httpServerException = (HttpServerErrorException) e.getCause();
+				throw new ApiNotAccessibleException(httpServerException.getResponseBodyAsString());
+			}
+			 else {
 				throw new DataEncryptionFailureException(e.getMessage());
 			}
 

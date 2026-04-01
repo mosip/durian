@@ -1,110 +1,183 @@
 package io.mosip.datashare.util;
-
+import java.io.IOException;
 import java.net.URI;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
-
 import io.mosip.datashare.constant.ApiName;
-import io.mosip.datashare.exception.ApiNotAccessibleException;
 
+import io.mosip.datashare.exception.ApiNotAccessibleException;
 /**
  * @author Sowmya The Class RestUtil.
  */
 @Component
 public class RestUtil {
-
+    /** The environment. */
     @Autowired
     private Environment environment;
 
     @Autowired
-    @Qualifier("selfTokenWebClient")
-    private WebClient webClient;
+    @Qualifier("selfTokenRestTemplate")
+    private RestTemplate restTemplate;
 
     /**
      * Post api.
+     *
+     * @param                 <T> the generic type
+     * @param apiName         the api name
+     * @param pathsegments    the pathsegments
+     * @param queryParamName  the query param name
+     * @param queryParamValue the query param value
+     * @param mediaType       the media type
+     * @param requestType     the request type
+     * @param responseClass   the response class
+     * @return the t
+     * @throws ApiNotAccessibleException the api not accessible exception
      */
     @SuppressWarnings("unchecked")
     public <T> T postApi(ApiName apiName, List<String> pathsegments, String queryParamName, String queryParamValue,
                          MediaType mediaType, Object requestType, Class<?> responseClass) throws ApiNotAccessibleException {
+        T result = null;
         String apiHostIpPort = environment.getProperty(apiName.name());
-        if (apiHostIpPort == null) return null;
-
-        String url = buildUrl(apiHostIpPort, pathsegments, queryParamName, queryParamValue);
-        try {
-            return (T) webClient.post()
-                    .uri(url)
-                    .contentType(mediaType != null ? mediaType : MediaType.APPLICATION_JSON)
-                    .bodyValue(requestType)
-                    .retrieve()
-                    .bodyToMono(responseClass)
-                    .block();
-        } catch (Exception e) {
-            throw new ApiNotAccessibleException(e);
+        UriComponentsBuilder builder = null;
+        if (apiHostIpPort != null)
+            builder = UriComponentsBuilder.fromUriString(apiHostIpPort);
+        if (builder != null) {
+            if (!((pathsegments == null) || (pathsegments.isEmpty()))) {
+                for (String segment : pathsegments) {
+                    if (!((segment == null) || (("").equals(segment)))) {
+                        builder.pathSegment(segment);
+                    }
+                }
+            }
+            if (!((queryParamName == null) || (("").equals(queryParamName)))) {
+                String[] queryParamNameArr = queryParamName.split(",");
+                String[] queryParamValueArr = queryParamValue.split(",");
+                for (int i = 0; i < queryParamNameArr.length; i++) {
+                    builder.queryParam(queryParamNameArr[i], queryParamValueArr[i]);
+                }
+            }
+            try {
+                result = (T) restTemplate.postForObject(
+                        builder.toUriString(), setRequestHeader(requestType, mediaType), responseClass);
+            } catch (Exception e) {
+                throw new ApiNotAccessibleException(e);
+            }
         }
+        return result;
     }
-
     /**
      * Gets the api.
+     *
+     * @param                 <T> the generic type
+     * @param apiName         the api name
+     * @param pathsegments    the pathsegments
+     * @param queryParamName  the query param name
+     * @param queryParamValue the query param value
+     * @param responseType    the response type
+     * @return the api
+     * @throws ApiNotAccessibleException the api not accessible exception
      */
     @SuppressWarnings("unchecked")
     public <T> T getApi(ApiName apiName, List<String> pathsegments, String queryParamName, String queryParamValue,
                         Class<?> responseType) throws ApiNotAccessibleException {
         String apiHostIpPort = environment.getProperty(apiName.name());
-        if (apiHostIpPort == null) return null;
-
-        String url = buildUrl(apiHostIpPort, pathsegments, queryParamName, queryParamValue);
-        try {
-            return (T) webClient.get()
-                    .uri(url)
-                    .retrieve()
-                    .bodyToMono(responseType)
-                    .block();
-        } catch (Exception e) {
-            throw new ApiNotAccessibleException(e);
+        T result = null;
+        UriComponentsBuilder builder = null;
+        UriComponents uriComponents = null;
+        if (apiHostIpPort != null) {
+            builder = UriComponentsBuilder.fromUriString(apiHostIpPort);
+            if (!((pathsegments == null) || (pathsegments.isEmpty()))) {
+                for (String segment : pathsegments) {
+                    if (!((segment == null) || (("").equals(segment)))) {
+                        builder.pathSegment(segment);
+                    }
+                }
+            }
+            if (!((queryParamName == null) || (("").equals(queryParamName)))) {
+                String[] queryParamNameArr = queryParamName.split(",");
+                String[] queryParamValueArr = queryParamValue.split(",");
+                for (int i = 0; i < queryParamNameArr.length; i++) {
+                    builder.queryParam(queryParamNameArr[i], queryParamValueArr[i]);
+                }
+            }
+            uriComponents = builder.build(false).encode();
+            try {
+                result = (T) restTemplate.exchange(
+                        uriComponents.toUri(), HttpMethod.GET, setRequestHeader(null, null), responseType).getBody();
+            } catch (Exception e) {
+                throw new ApiNotAccessibleException(e);
+            }
         }
+        return result;
     }
-
     @SuppressWarnings("unchecked")
     public <T> T getApi(ApiName apiName, Map<String, String> pathsegments, Class<?> responseType) throws Exception {
         String apiHostIpPort = environment.getProperty(apiName.name());
-        if (apiHostIpPort == null) return null;
-
-        try {
-            URI urlWithPath = UriComponentsBuilder.fromUriString(apiHostIpPort).build(pathsegments);
-            return (T) webClient.get()
-                    .uri(urlWithPath)
-                    .retrieve()
-                    .bodyToMono(responseType)
-                    .block();
-        } catch (Exception e) {
-            throw new Exception(e);
+        T result = null;
+        UriComponentsBuilder builder = null;
+        UriComponents uriComponents = null;
+        if (apiHostIpPort != null) {
+            builder = UriComponentsBuilder.fromUriString(apiHostIpPort);
+            URI urlWithPath = builder.build(pathsegments);
+            try {
+                result = (T) restTemplate.exchange(
+                        urlWithPath, HttpMethod.GET, setRequestHeader(null, null), responseType
+                ).getBody();
+            } catch (Exception e) {
+                throw new Exception(e);
+            }
         }
+        return result;
     }
 
-    private String buildUrl(String baseUrl, List<String> pathsegments, String queryParamName, String queryParamValue) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl);
-        if (pathsegments != null && !pathsegments.isEmpty()) {
-            for (String segment : pathsegments) {
-                if (segment != null && !segment.isEmpty()) {
-                    builder.pathSegment(segment);
+    /**
+     * Sets the request header.
+     *
+     * @param requestType the request type
+     * @param mediaType   the media type
+     * @return the http entity
+     * @throws IOException Signals that an I/O exception has occurred.
+     */
+    private HttpEntity<Object> setRequestHeader(Object requestType, MediaType mediaType) throws IOException {
+        MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
+        if (mediaType != null) {
+            headers.add("Content-Type", mediaType.toString());
+        }
+        if (requestType != null) {
+            try {
+                HttpEntity<Object> httpEntity = (HttpEntity<Object>) requestType;
+                HttpHeaders httpHeader = httpEntity.getHeaders();
+                Iterator<String> iterator = httpHeader.keySet().iterator();
+                while (iterator.hasNext()) {
+                    String key = iterator.next();
+                    if (!(headers.containsKey("Content-Type") && key.equalsIgnoreCase("Content-Type"))) {
+                        String value = Optional.ofNullable(httpHeader.get(key))
+                                .flatMap(list -> list.stream().findFirst())
+                                .orElseThrow(() -> new IllegalArgumentException("Header value is null"));
+                        headers.add(key, value);
+                    }
                 }
+                return new HttpEntity<Object>(httpEntity.getBody(), headers);
+            } catch (ClassCastException e) {
+                return new HttpEntity<Object>(requestType, headers);
             }
-        }
-        if (queryParamName != null && !queryParamName.isEmpty()) {
-            String[] names = queryParamName.split(",");
-            String[] values = queryParamValue.split(",");
-            for (int i = 0; i < names.length; i++) {
-                builder.queryParam(names[i], values[i]);
-            }
-        }
-        return builder.toUriString();
+        } else
+            return new HttpEntity<Object>(headers);
     }
 }
