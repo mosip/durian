@@ -2,8 +2,6 @@ package io.mosip.datashare.controller;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -52,8 +50,6 @@ public class DataShareController {
 
 	private static final String DATA_SHARE_SERVICE_VERSION = "mosip.data.share.service.version";
 
-    private static final Logger mosipLogger = LoggerFactory.getLogger(DataShareController.class);
-
 	/**
 	 * Creates the data share.
 	 *
@@ -76,27 +72,14 @@ public class DataShareController {
 			@ApiResponse(responseCode = "403", description = "Forbidden" ,content = @Content(schema = @Schema(hidden = true))),
 			@ApiResponse(responseCode = "404", description = "Not Found" ,content = @Content(schema = @Schema(hidden = true)))})
 	public ResponseEntity<Object> createDataShare(@RequestBody MultipartFile file,
-												  @PathVariable("policyId") String policyId, @PathVariable("subscriberId") String subscriberId,
-												  @Parameter(description = "Usage count for standalone mode") @RequestParam(required = false, name = "usageCountForStandaloneMode") String usageCountForStandaloneMode) {
+			@PathVariable("policyId") String policyId, @PathVariable("subscriberId") String subscriberId,
+			@Parameter(description = "Usage count for standalone mode") @RequestParam(required = false, name = "usageCountForStandaloneMode") String usageCountForStandaloneMode) {
 
-		long startTime = System.currentTimeMillis();
-        mosipLogger.info("START - createDataShare API called for policyId: {} | subscriberId: {} at: {} ms", policyId, subscriberId, startTime);
 
-		try {
-			DataShare dataShare = dataShareService.createDataShare(policyId, subscriberId, file, usageCountForStandaloneMode);
+		DataShare dataShare = dataShareService.createDataShare(policyId, subscriberId, file, usageCountForStandaloneMode);
+		return ResponseEntity.status(HttpStatus.OK)
+				.body(buildDataShareResponse(dataShare));
 
-			long endTime = System.currentTimeMillis();
-            mosipLogger.info("END - createDataShare API completed for policyId: {} | subscriberId: {} at: {} ms", policyId, subscriberId, endTime);
-            mosipLogger.info("TOTAL TIME - createDataShare took: {} ms for policyId: {} | subscriberId: {}", endTime - startTime, policyId, subscriberId);
-
-			return ResponseEntity.status(HttpStatus.OK)
-					.body(buildDataShareResponse(dataShare));
-
-		} catch (Exception e) {
-			long endTime = System.currentTimeMillis();
-            mosipLogger.error("ERROR - createDataShare failed for policyId: {} | subscriberId: {} | Total time before failure: {} ms | Error: {}", policyId, subscriberId, endTime - startTime, e.getMessage());
-			throw e;
-		}
 	}
 
 	private DataShareResponseDto buildDataShareResponse(DataShare dataShare) {
