@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 
 import io.mosip.commons.khazana.exception.ObjectStoreAdapterException;
 import jakarta.annotation.PostConstruct;
@@ -95,7 +96,7 @@ public class DataShareServiceImpl implements DataShareService {
 	private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
 	/** Key length for random share keys, cached from config at startup. */
-	@Value("${" + KEY_LENGTH + ":8}")
+	@Value("${" + KEY_LENGTH + ":" + DEFAULT_KEY_LENGTH + "}")
 	private int keyLength;
 
 	/** The Constant IO_EXCEPTION. */
@@ -179,7 +180,6 @@ public class DataShareServiceImpl implements DataShareService {
 				} else {
 					dataSharePolicy = policyUtil.getStaticDataSharePolicy(policyId, subscriberId, usageCountForStandaloneMode);
 				}
-				// Compute timestamps first (pure CPU, no I/O)
 				String createShareTime = DateUtils2
 						.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN));
 				String expiryTime = DateUtils2
@@ -188,41 +188,35 @@ public class DataShareServiceImpl implements DataShareService {
 
 				// Launch encryption and JWT signing in parallel — they are independent of each other
 				final String encType = dataSharePolicy.getEncryptionType();
-				final byte[] fd = fileData;
-				final String sid = subscriberId;
 
 				CompletableFuture<byte[]> encryptFuture;
 				if (PARTNERBASED.equalsIgnoreCase(encType)) {
 					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 							policyId, subscriberId + "encryptionNeeded" + encType);
 					encryptFuture = CompletableFuture.supplyAsync(
-							() -> encryptionUtil.encryptData(fd, sid), taskExecutor);
-				} else {
+							() -> encryptionUtil.encryptData(fileData, subscriberId), taskExecutor);
+				} else if (NONE.equalsIgnoreCase(encType)) {
 					LOGGER.info(LoggerFileConstant.SESSIONID.toString(), LoggerFileConstant.POLICYID.toString(),
 							policyId, subscriberId + "Without encryption" + encType);
-					encryptFuture = CompletableFuture.completedFuture(fd);
+					encryptFuture = CompletableFuture.completedFuture(fileData);
+				} else {
+					encryptFuture = CompletableFuture.completedFuture(null);
 				}
 
-				final String cst = createShareTime;
-				final String et = expiryTime;
-				final String fn = file.getName();
 				CompletableFuture<String> signFuture = isSignatureDisabled
 						? CompletableFuture.completedFuture("")
 						: CompletableFuture.supplyAsync(
-								() -> digitalSignatureUtil.jwtSign(fd, fn, sid, cst, et), taskExecutor);
+								() -> digitalSignatureUtil.jwtSign(fileData, file.getName(), subscriberId,
+										createShareTime, expiryTime), taskExecutor);
 
 				byte[] encryptedData;
 				String jwtSignature;
 				try {
 					CompletableFuture.allOf(encryptFuture, signFuture).join();
-					encryptedData = encryptFuture.getNow(fd);
-					jwtSignature = signFuture.getNow("");
+					encryptedData = encryptFuture.join();
+					jwtSignature = signFuture.join();
 				} catch (CompletionException ce) {
-					Throwable cause = ce.getCause();
-					if (cause instanceof RuntimeException) {
-						throw (RuntimeException) cause;
-					}
-					throw new FileException("Async operation failed", new IOException(cause));
+					throw completionCauseUnwrapped(ce);
 				}
 				Map<String, Object> aclMap = prepareMetaData(subscriberId, policyId, dataSharePolicy,
 						jwtSignature, policyPublishDate);
@@ -458,6 +452,28 @@ public class DataShareServiceImpl implements DataShareService {
 		}
 
 
+	}
+
+	/**
+	 * Unwraps {@code CompletableFuture.join()} failures so callers see the same throwable as
+	 * synchronous {@code encryptData} / {@code jwtSign} (including nested
+	 * {@link CompletionException} / {@link ExecutionException} from {@code allOf} / executors).
+	 */
+	private static RuntimeException completionCauseUnwrapped(CompletionException ce) {
+		Throwable t = ce;
+		while ((t instanceof CompletionException || t instanceof ExecutionException) && t.getCause() != null) {
+			t = t.getCause();
+		}
+		if (t instanceof Error) {
+			throw (Error) t;
+		}
+		if (t instanceof RuntimeException) {
+			return (RuntimeException) t;
+		}
+		if (t != null) {
+			return new CompletionException(t);
+		}
+		return ce;
 	}
 
 	private static String generateShortRandomShareKey(int byteLength) {
