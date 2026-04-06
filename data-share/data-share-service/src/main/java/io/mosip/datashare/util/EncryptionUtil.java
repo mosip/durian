@@ -10,7 +10,7 @@ import java.time.format.DateTimeParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-import io.mosip.kernel.core.util.DateUtils;
+import io.mosip.kernel.core.util.DateUtils2;
 import jakarta.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,7 +108,7 @@ public class EncryptionUtil {
 			cryptomanagerRequestDto.setData(dataToBeEncrypted);
 			cryptomanagerRequestDto.setReferenceId(partnerId);
 			cryptomanagerRequestDto.setPrependThumbprint(prependThumbprint);
-			LocalDateTime localdatetime = LocalDateTime.parse(DateUtils.getUTCCurrentDateTimeString(dateTimePattern), formatter);
+			LocalDateTime localdatetime = LocalDateTime.parse(DateUtils2.getUTCCurrentDateTimeString(dateTimePattern), formatter);
 			request.setRequesttime(localdatetime);
 
 			request.setRequest(cryptomanagerRequestDto);
