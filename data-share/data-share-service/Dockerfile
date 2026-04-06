@@ -75,6 +75,8 @@ VOLUME ${work_dir}/logs
 
 ADD ./target/data-share-service-*.jar data-share-service.jar
 
+ADD configure_start.sh configure_start.sh
+
 # change permissions of file inside working dir
 RUN chown -R ${container_user}:${container_user} /home/${container_user}
 
