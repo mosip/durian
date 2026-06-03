@@ -25,7 +25,7 @@ import io.mosip.datashare.exception.SignatureException;
 import io.mosip.datashare.exception.URLCreationException;
 import io.mosip.kernel.core.exception.BaseCheckedException;
 import io.mosip.kernel.core.exception.BaseUncheckedException;
-import io.mosip.kernel.core.util.DateUtils;
+import io.mosip.kernel.core.util.DateUtils2;
 
 @RestControllerAdvice(assignableTypes = DataShareController.class)
 public class DataShareExceptionHandler {
@@ -110,7 +110,7 @@ public class DataShareExceptionHandler {
 					.collect(Collectors.toList());
 			response.setErrors(errors);
 		}
-		response.setResponsetime(DateUtils.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN)));
+		response.setResponsetime(DateUtils2.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN)));
 		response.setVersion(env.getProperty(DATA_SHARE_SERVICE_VERSION));
 
 		return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(response);
