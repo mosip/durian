@@ -69,6 +69,7 @@
             </snapshots>
         </repository>
     </repositories>
+
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
