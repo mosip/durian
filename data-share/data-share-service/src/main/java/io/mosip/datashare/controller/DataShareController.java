@@ -23,7 +23,7 @@ import io.mosip.datashare.dto.DataShare;
 import io.mosip.datashare.dto.DataShareGetResponse;
 import io.mosip.datashare.dto.DataShareResponseDto;
 import io.mosip.datashare.service.DataShareService;
-import io.mosip.kernel.core.util.DateUtils;
+import io.mosip.kernel.core.util.DateUtils2;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -86,7 +86,7 @@ public class DataShareController {
 		DataShareResponseDto dataShareResponseDto = new DataShareResponseDto();
 		dataShareResponseDto.setDataShare(dataShare);
 		dataShareResponseDto.setId(DATA_SHARE_SERVICE_ID);
-		dataShareResponseDto.setResponsetime(DateUtils.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN)));
+		dataShareResponseDto.setResponsetime(DateUtils2.getUTCCurrentDateTimeString(env.getProperty(DATETIME_PATTERN)));
 		dataShareResponseDto.setVersion(env.getProperty(DATA_SHARE_SERVICE_VERSION));
 		return dataShareResponseDto;
 	}

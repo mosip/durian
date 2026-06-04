@@ -4,10 +4,14 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectReader;
+import io.mosip.datashare.dto.CryptomanagerResponseDto;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -65,32 +69,30 @@ public class DigitalSignatureUtilTest {
 	@Before
 	public void setUp() throws JsonParseException, JsonMappingException, IOException, NoSuchAlgorithmException {
 		ReflectionTestUtils.setField(digitalSignatureUtil, "digestAlg", "SHA256");
+		ReflectionTestUtils.setField(digitalSignatureUtil, "formatter",
+				DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
+		ReflectionTestUtils.setField(digitalSignatureUtil, "dateTimePattern",
+				"yyyy-MM-dd'T'HH:mm:ss");
 		signResponseDto = new SignResponseDto();
 		JWTSignatureResponseDto jwtSign = new JWTSignatureResponseDto();
 		jwtSign.setJwtSignedData(data);
 		signResponseDto.setResponse(jwtSign);
 		jwtsignResponse = "{\r\n" +
-    		"  \"id\": \"string\",\r\n" + 
-    		"  \"version\": \"string\",\r\n" + 
-    		"  \"responsetime\": \"2020-07-28T10:06:31.530Z\",\r\n" + 
-    		"  \"metadata\": null,\r\n" + 
-    		"  \"response\": {\r\n" + 
-				"    \"jwtSignedData\": \"testdata\",\r\n" + 
-    		"    \"timestamp\": \"2020-07-28T10:06:31.502Z\"\r\n" + 
-    		"  },\r\n" + 
-    		"  \"errors\": null\r\n" + 
+				"  \"id\": \"string\",\r\n" +
+				"  \"version\": \"string\",\r\n" +
+				"  \"responsetime\": \"2020-07-28T10:06:31.530Z\",\r\n" +
+				"  \"metadata\": null,\r\n" +
+				"  \"response\": {\r\n" +
+				"    \"jwtSignedData\": \"testdata\",\r\n" +
+				"    \"timestamp\": \"2020-07-28T10:06:31.502Z\"\r\n" +
+				"  },\r\n" +
+				"  \"errors\": null\r\n" +
 				"}";
 
 		Mockito.when(restUtil.postApi(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(),
 				Mockito.any(), Mockito.any())).thenReturn(jwtsignResponse);
 
 		Mockito.when(objectMapper.readValue(jwtsignResponse, SignResponseDto.class)).thenReturn(signResponseDto);
-		Mockito.when(environment.getProperty("mosip.data.share.datetime.pattern"))
-				.thenReturn("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-		Mockito.when(environment.getProperty("mosip.data.share.includeCertificateHash"))
-				.thenReturn("false");
-		Mockito.when(environment.getProperty("mosip.data.share.includeCertificate")).thenReturn("false");
-		Mockito.when(environment.getProperty("mosip.data.share.includePayload")).thenReturn("false");
 		PowerMockito.mockStatic(CryptoUtil.class);
 		Mockito.when(CryptoUtil.encodeBase64(Mockito.any())).thenReturn(data);
 		PowerMockito.mockStatic(HMACUtils2.class);
@@ -102,12 +104,16 @@ public class DigitalSignatureUtilTest {
 
 	@Test
 	public void signSuccessTest() throws IOException {
+		ObjectReader mockReader = Mockito.mock(ObjectReader.class);
+		Mockito.when(objectMapper.readerFor(SignResponseDto.class)).thenReturn(mockReader);
+		Mockito.when(mockReader.readValue(Mockito.anyString())).thenReturn(signResponseDto);
+		ReflectionTestUtils.setField(digitalSignatureUtil, "signRespReader", mockReader);
 		String test = "testdata";
 		byte[] sample = test.getBytes();
-		
+
 		String signedData = digitalSignatureUtil.jwtSign(sample, "test", "", "", "");
 		assertEquals(test, signedData);
-		
+
 
 	}
 
