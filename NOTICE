@@ -23,7 +23,7 @@ Apache License 2.0 Components
  • PowerMock (API Mockito2, Module JUnit4)
 
  • Git Commit ID Maven Plugin (3.0.1)
- • Central Publishing Maven Plugin (0.7.0)
+ • Central Publishing Maven Plugin (0.11.0)
 
  • Apache Maven Compiler Plugin (3.11.0)
  • Apache Maven Source Plugin (2.2.1)
